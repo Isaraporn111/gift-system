@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ระบบเบิกของขวัญปีใหม่</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Mali:wght@400;500;600;700&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f3ee;--card:#fffefc;--soft:#f1eee7;--ink:#23273a;--mute:#767b8e;--line:#e8e4da;--accent:#c4453a;--accentbg:#fbeceb;--ok:#2a8556;--okbg:#e5f3ea;--wait:#a5701f;--waitbg:#fbf0dc;--bar:#3a4166;--sh:0 1px 2px rgba(35,39,58,.05),0 6px 20px rgba(35,39,58,.05);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141829;--card:#1c2240;--soft:#252c4f;--ink:#eceaf2;--mute:#9a9fba;--line:#2f3659;--accent:#ff8f85;--accentbg:#3a2130;--ok:#6fd3a0;--okbg:#1d3a31;--wait:#e8bd6a;--waitbg:#3a3220;--bar:#e8bd6a;--sh:none}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15.5px/1.65 "IBM Plex Sans Thai",system-ui,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 18px 70px}
+header.top{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:23px;margin:0;font-weight:600;letter-spacing:-.2px}
+h1:before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:10px;vertical-align:middle}
+h2{font-size:17px;margin:0 0 12px;font-weight:600}
+.sub{color:var(--mute);font-size:13.5px}
+.seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:4px}
+.seg button{border:0;background:none;color:var(--mute);padding:7px 16px;border-radius:999px;font:inherit;font-size:14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);font-weight:500;box-shadow:var(--sh)}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+nav button{border:0;background:none;color:var(--mute);padding:8px 16px;border-radius:999px;font:inherit;cursor:pointer}
+nav button:hover{background:var(--soft)}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg);font-weight:500}
+.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:#fff;font-size:12px;text-align:center;margin-left:6px}
+.note{background:var(--waitbg);color:var(--wait);padding:9px 14px;font-size:13px;margin-bottom:20px;border-radius:12px}
+.card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:var(--sh)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:5px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+select:disabled{opacity:.55}
+.btn{border:0;border-radius:10px;background:var(--accent);color:#fff;padding:10px 20px;font:inherit;font-weight:500;cursor:pointer}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.sm{padding:6px 12px;font-size:13.5px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--mute);font-size:13px}
+.scroll{overflow-x:auto}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12.5px;white-space:nowrap;font-weight:500}
+.tag.wait{background:var(--waitbg);color:var(--wait)}.tag.done{background:var(--okbg);color:var(--ok)}.tag.low,.tag.late{background:var(--accentbg);color:var(--accent)}
+.kpis{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:18px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 18px;box-shadow:var(--sh)}
+.kpi b{display:block;font-size:28px;line-height:1.25;font-weight:600}
+.kpi span{color:var(--mute);font-size:13px}
+.row{display:grid;grid-template-columns:120px 1fr 44px;gap:10px;align-items:center;margin:7px 0;font-size:14.5px}
+.lr{width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:5px 8px;border-radius:10px}
+.lr.on{background:var(--soft)}
+.track{background:var(--soft);border-radius:6px;height:12px;position:relative;overflow:hidden}
+.fill{background:var(--bar);height:100%;border-radius:6px}
+.min{position:absolute;top:0;bottom:0;width:2px;background:var(--accent)}
+.alert{padding:12px 14px;border-radius:12px;margin-bottom:8px;background:var(--soft)}
+.alert.unread{background:var(--waitbg)}
+.alert small{color:var(--mute);display:block}
+.irow{display:grid;grid-template-columns:1fr 90px auto;gap:8px;margin-bottom:8px;align-items:center}
+.irow3{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.irow2{display:grid;grid-template-columns:1fr 92px 92px;gap:10px;align-items:end;padding:8px 0;border-top:1px solid var(--line)}
+.irow2 input{padding:6px 10px}
+.irow2 label{margin:0}
+.line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14.5px;border-top:1px solid var(--line)}
+.rq{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--sh)}
+.rq.isdone{opacity:.82}
+.rqh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}
+.rqf{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.rqf>div{min-width:180px;flex:1}
+.ql{display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start}
+.side{background:var(--card);border-radius:16px;padding:10px;box-shadow:var(--sh);position:sticky;top:12px}
+.tn,.pn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border-radius:10px;padding:9px 12px}
+.tn{font-weight:500}
+.pn{padding:7px 12px 7px 26px;font-size:14.5px;color:var(--mute)}
+.tn:hover,.pn:hover{background:var(--soft)}
+.tn.on,.pn.on{background:var(--soft);color:var(--ink)}
+.pn.on{font-weight:500}
+.cnt{min-width:24px;padding:0 7px;border-radius:999px;background:var(--waitbg);color:var(--wait);font-size:12.5px;text-align:center;font-weight:500}
+.cnt.z{background:none;color:var(--mute);opacity:.6}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--mute);border-radius:999px;padding:5px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:14px}
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:20}
+.toast{background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;max-width:320px;font-size:14px;box-shadow:var(--sh)}
+.empty{color:var(--mute);padding:22px 0;text-align:center}
+@media (max-width:760px){.ql{grid-template-columns:1fr}.side{position:static}}
+@media (max-width:560px){.row{grid-template-columns:84px 1fr 36px}.irow2{grid-template-columns:1fr 1fr}.irow2 span{grid-column:1/-1}}
+.co-row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--line)}
+.co-row:first-of-type{border-top:0}
+.cname{font-weight:500;font-size:16px}
+.fld{margin-bottom:14px}
+/* ===== 8-bit theme ===== */
+:root{--bg:#fbf3dc;--card:#fffdf6;--soft:#f4ebcb;--ink:#232a4d;--mute:#5f678e;--line:#dccf9f;--accent:#3f63a8;--accentbg:#ffd6db;--ok:#1f6e3d;--okbg:#c9ecd0;--wait:#8a4a05;--waitbg:#ffe0b0;--bar:#3f63a8;--pk:#232a4d;--org:#f08a2e;--red:#d6304a;--sh:4px 4px 0 var(--pk);--p1:#dbeeff;--p2:#d6f2dc;--p3:#ffe6bf;--p4:#ffdbe2;--inp:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1f42;--card:#262c5a;--soft:#323a72;--ink:#fbf3dc;--mute:#b2b8dc;--line:#46508f;--accent:#7fb0ff;--accentbg:#5a2a42;--ok:#8fe0ab;--okbg:#25523b;--wait:#ffd28a;--waitbg:#5a4524;--bar:#7fb0ff;--pk:#0b0e2a;--org:#ffa24a;--red:#ff8196;--sh:4px 4px 0 var(--pk);--p1:#2c3b78;--p2:#27504a;--p3:#4f4330;--p4:#51304f;--inp:#1b1f42}}
+body{background-color:var(--bg);background-image:linear-gradient(90deg,rgba(35,42,77,.05) 2px,transparent 2px),linear-gradient(rgba(35,42,77,.05) 2px,transparent 2px);background-size:24px 24px}
+h1,h2,.btn,nav button,.seg button,.chip,.tag,.cname,th{font-family:"Mali","IBM Plex Sans Thai",sans-serif}
+.card,.kpi,.rq,.side,.toast,.hero,.alert,.note,.seg,.seg button,nav button,.btn,input,select,.tag,.cnt,.chip,.badge,.tn,.pn,.lr,.track,.fill{border-radius:0}
+.card,.kpi,.rq,.side,.hero{border:3px solid var(--pk);box-shadow:var(--sh)}
+.card,.rq,.side{background:var(--card)}
+.rq{padding:16px 18px;margin-bottom:16px}
+.rq.isdone{opacity:.85}
+.alert{border:2px solid var(--pk);box-shadow:none}
+.note{background:var(--waitbg);color:var(--wait);border:3px dashed var(--org)}
+h1{color:var(--accent);font-weight:700;font-size:25px}
+h1:before{display:none}
+h2{font-weight:600}
+h2:before{content:"";display:inline-block;width:10px;height:10px;background:var(--org);box-shadow:3px 3px 0 var(--pk);margin-right:12px;vertical-align:1px}
+header.top{justify-content:flex-start;gap:16px}
+header.top>:nth-child(3){margin-left:auto}
+input,select{background:var(--inp);color:var(--ink);border:3px solid var(--pk);padding:9px 12px}
+input:focus,select:focus{outline:0;box-shadow:3px 3px 0 var(--org)}
+button:focus-visible{outline:3px solid var(--org);outline-offset:2px}
+.btn{border:3px solid var(--pk);box-shadow:3px 3px 0 var(--pk);background:var(--accent);color:#fff;font-weight:600}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--pk)}
+.btn:active{transform:translate(3px,3px);box-shadow:none}
+.btn.ghost{background:var(--card);color:var(--ink)}
+.btn.sm{padding:5px 12px}
+.seg{background:var(--card);border:3px solid var(--pk);padding:3px;box-shadow:3px 3px 0 var(--pk);gap:2px}
+.seg button{color:var(--ink);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--org);color:#232a4d;box-shadow:none;font-weight:600}
+nav button{border:3px solid transparent;color:var(--ink);font-weight:500}
+nav button:hover{background:var(--soft);border-color:var(--pk)}
+nav button[aria-selected="true"]{background:var(--accent);color:#fff;border-color:var(--pk);box-shadow:3px 3px 0 var(--pk)}
+.chip{border:3px solid var(--pk);color:var(--ink);background:var(--card);font-weight:500}
+.chip.on{background:var(--org);color:#232a4d;border-color:var(--pk)}
+.tag{border:2px solid var(--pk);font-weight:600}
+.tag.low,.tag.late{color:var(--red)}
+.cnt{border:2px solid var(--pk);font-family:"Pixelify Sans",sans-serif;font-weight:600;color:var(--wait)}
+.cnt.z{background:none;border-color:transparent;opacity:.55}
+.badge{border:2px solid var(--pk);font-family:"Pixelify Sans",sans-serif;background:var(--red);color:#fff}
+.track{border:2px solid var(--pk);height:16px;background:var(--card)}
+.fill{background:repeating-linear-gradient(90deg,var(--bar) 0 6px,transparent 6px 8px)}
+.min{background:var(--red);width:3px}
+.row b,.kpi b,.hero-t{font-family:"Pixelify Sans","Mali",sans-serif}
+.kpi b{font-size:32px;color:var(--accent)}
+.kpi:nth-child(1){background:var(--p1)}.kpi:nth-child(2){background:var(--p2)}.kpi:nth-child(3){background:var(--p3)}.kpi:nth-child(4){background:var(--p4)}
+.tn.on,.pn.on{background:var(--waitbg);color:var(--ink);box-shadow:inset 4px 0 0 var(--org)}
+.lr.on{background:var(--waitbg)}
+th,td{border-bottom:2px dashed var(--line)}
+.irow2,.line,.rqf{border-top:2px dashed var(--line)}
+.toast{background:var(--pk);color:#fbf3dc;border:3px solid var(--org);box-shadow:var(--sh)}
+.toast:before{content:"\2605  ";color:var(--org)}
+.empty{font-family:"Mali",sans-serif;font-weight:500}
+.hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--p1);padding:16px 20px;margin-bottom:20px}
+.hero-t{font-size:26px;font-weight:700;color:var(--accent);letter-spacing:1px;line-height:1.2}
+.pxc{display:flex;justify-content:center;margin-bottom:8px}
+.px{display:block;image-rendering:pixelated;flex:none}
+.bob{animation:bob 1.2s infinite}
+@keyframes bob{0%,49%{transform:translateY(0)}50%,100%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.bob{animation:none}.btn:hover{transform:none}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn,:root:not([data-theme="light"]) nav button[aria-selected="true"]{color:#0b0e2a}:root:not([data-theme="light"]) .btn.ghost{color:var(--ink)}}
+.irow{grid-template-columns:48px 1fr 90px auto}
+.thumb{display:block;object-fit:cover;border:3px solid var(--pk);background:var(--soft);flex:none}
+.thumb.ph{display:flex;align-items:center;justify-content:center;background:var(--p3);overflow:hidden}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px;margin-bottom:16px}
+.gcard{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border:3px solid var(--pk);background:var(--card);color:var(--ink);font:inherit;cursor:pointer;box-shadow:3px 3px 0 var(--pk);text-align:center}
+.gcard:hover{transform:translate(-1px,-1px)}
+.gcard:active{transform:translate(2px,2px);box-shadow:none}
+.gcard.on{background:var(--waitbg)}
+.gcard:disabled{opacity:.5;cursor:not-allowed}
+.gcard .gn{font-weight:500;font-size:14px;line-height:1.3}
+.gcard .badge{position:absolute;top:-10px;right:-10px;margin:0}
+.btn.danger{background:var(--card);color:var(--red)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.danger{color:var(--red)}}
+.dash2{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:18px}
+.dash2 .card{margin-bottom:0}
+@media (max-width:860px){.dash2{grid-template-columns:1fr}}
+.mask{position:fixed;inset:0;background:rgba(35,42,77,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.dlg{background:var(--card);border:3px solid var(--pk);box-shadow:var(--sh);padding:20px;max-width:380px;width:100%}
+.dlg-t{font-weight:500;margin-bottom:16px}
+.dlg-b{display:flex;gap:10px;justify-content:flex-end}
+body.wait,body.wait *{cursor:progress}
+body.wait .btn{opacity:.65;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top" id="top"></header>
+<nav id="nav" role="tablist"></nav>
+<main id="view"></main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<script src="config.js"></script>
+<script>
+function addDays(n){ return new Date(Date.now() + n*864e5).toLocaleDateString("en-CA"); }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function fmt(ts){ return new Date(ts).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }
+function fmtD(s){ return new Date(s+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}); }
+function toast(t){
+  var el = document.createElement("div"); el.className = "toast"; el.textContent = t;
+  document.getElementById("toasts").appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3500);
+}
+function mine(n){ return role==="mkt" ? n.to==="mkt" : n.to===S.me; }
+function unreadCount(){ return S.notes.filter(function(n){ return !n.read && mine(n); }).length; }
+function gs(n){ return S.stock.filter(function(g){return g.name===n;})[0]; }
+function team(n){ return S.teams.filter(function(t){return t.name===n;})[0]; }
+function st(r){
+  var q = 0, g = 0;
+  r.items.forEach(function(i){ q += i.qty; g += Math.min(i.given, i.qty); });
+  return {q:q, g:g, done:!!r.cancelled || (q>0 && g>=q)};
+}
+function stat(r){ return r.cancelled ? "cancel" : (st(r).done ? "done" : "pending"); }
+function tag(r){
+  var s = st(r);
+  if(r.cancelled) return '<span class="tag low">ยกเลิก</span>';
+  if(s.done) return '<span class="tag done">done</span>';
+  var late = r.need < addDays(0) ? ' <span class="tag late">เลยกำหนด</span>' : "";
+  return '<span class="tag wait">pending '+s.g+'/'+s.q+'</span>'+late;
+}
+function tabs(){
+  return role==="sale"
+    ? [["form","เบิกของขวัญ"],["mine","คำขอของฉัน"],["notes","การแจ้งเตือน"]]
+    : [["queue","คำขอเบิก"],["stock","จัดการสต็อก"],["people","ทีมและรายชื่อ"],["dash","Dashboard"],["notes","การแจ้งเตือน"]];
+}
+function renderApp(){
+  renderTop();
+  var ts = tabs();
+  if(!ts.some(function(t){return t[0]===tab;})) tab = ts[0][0];
+  var u = unreadCount(), pend = S.reqs.filter(function(r){return !st(r).done;}).length;
+  document.getElementById("nav").innerHTML = ts.map(function(t){
+    var c = t[0]==="notes" ? u : (t[0]==="queue" ? pend : 0);
+    return '<button role="tab" data-a="tab" data-v="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+(c?'<span class="badge">'+c+'</span>':"")+'</button>';
+  }).join("");
+  document.getElementById("view").innerHTML = {form:vForm,mine:vMine,notes:vNotes,queue:vQueue,stock:vStock,people:vPeople,dash:vDash}[tab]();
+}
+function vForm(){
+  var t = team(F.team), members = t ? t.members : [];
+  var topts = '<option value="">เลือกทีมก่อน</option>' + S.teams.map(function(x){
+    return '<option'+(x.name===F.team?" selected":"")+'>'+esc(x.name)+'</option>'; }).join("");
+  var nopts = '<option value="">'+(F.team ? (members.length?"เลือกชื่อ":"ยังไม่มีรายชื่อ ให้ Marketing เพิ่ม") : "เลือกทีมก่อน")+'</option>' +
+    members.map(function(m){ return '<option'+(m===F.name?" selected":"")+'>'+esc(m)+'</option>'; }).join("");
+  var gal = S.stock.map(function(g,i){
+    var n = F.items.reduce(function(a,it){ return a + (it.gift===g.name ? it.qty : 0); }, 0);
+    return '<button type="button" class="gcard'+(n?" on":"")+'" data-a="pick" data-v="'+i+'"'+(g.qty<=0?" disabled":"")+'>'+thumbG(g,64)+'<span class="gn">'+esc(g.name)+'</span><span class="sub">เหลือ '+g.qty+'</span>'+(n?'<span class="badge">'+n+'</span>':"")+'</button>';
+  }).join("");
+  var items = F.items.map(function(it,i){
+    var go = '<option value="">เลือกของขวัญ</option>' + S.stock.map(function(g){
+      return '<option value="'+esc(g.name)+'"'+(g.name===it.gift?" selected":"")+(g.qty<=0?" disabled":"")+'>'+esc(g.name)+' (เหลือ '+g.qty+')</option>'; }).join("");
+    return '<div class="irow"><div>'+thumb(it.gift,48)+'</div><select data-fi="'+i+'" data-k="gift" aria-label="ของขวัญ">'+go+'</select>'+
+      '<input type="number" min="1" value="'+it.qty+'" data-fi="'+i+'" data-k="qty" aria-label="จำนวน">'+
+      (F.items.length>1 ? '<button type="button" class="btn ghost sm" data-a="rmi" data-v="'+i+'">ลบ</button>' : '<span></span>')+'</div>';
+  }).join("");
+  return '<form id="f" class="card"><h2>ฟอร์มเบิกของขวัญ</h2><div class="grid">'+
+    '<div><label for="ft">ทีม</label><select id="ft">'+topts+'</select></div>'+
+    '<div><label for="fn">ชื่อผู้เบิก</label><select id="fn"'+(F.team?"":" disabled")+'>'+nopts+'</select></div>'+
+    '<div><label for="fc">บริษัท</label><input id="fc" value="'+esc(F.company)+'" placeholder="ชื่อบริษัทที่จะนำไปมอบ"></div>'+
+    '<div><label for="fd">วันที่ต้องการรับของ</label><input id="fd" type="date" value="'+F.need+'"></div></div>'+
+    '<h2 style="margin-top:22px">รายการของขวัญ</h2><div class="sub" style="margin-bottom:10px">กดที่รูปเพื่อเพิ่มลงรายการ หรือเลือกจากช่องด้านล่าง</div><div class="gal">'+gal+'</div>'+items+
+    '<p><button type="button" class="btn ghost sm" data-a="addi">เพิ่มของขวัญอีกรายการ</button></p>'+
+    '<button class="btn" type="submit">ส่งคำขอเบิก</button></form>';
+}
+function vMine(){
+  var list = S.reqs.filter(function(r){ return r.name===S.me; }).sort(function(a,b){return b.ts-a.ts;});
+  var h = list.map(function(r){
+    return '<div class="rq"><div class="rqh"><div><b>'+esc(r.company)+'</b><div class="sub">เบิกเมื่อ '+fmt(r.ts)+', ต้องการรับ '+fmtD(r.need)+'<br>ผู้ดูแล: '+(r.handler?esc(r.handler):"รอ Marketing มอบหมาย")+'</div></div><div>'+tag(r)+'</div></div>'+
+      r.items.map(function(i){ return '<div class="line"><span>'+esc(i.gift)+'</span><span>ได้รับ '+i.given+' จาก '+i.qty+' ชิ้น</span></div>'; }).join("")+'</div>';
+  }).join("");
+  return '<div class="card"><h2>คำขอของ '+esc(S.me||"-")+'</h2>'+(h||'<div class="empty">ยังไม่มีคำขอ ไปที่แท็บ “เบิกของขวัญ” เพื่อสร้างคำขอแรก</div>')+'</div>';
+}
+function vNotes(){
+  var list = S.notes.filter(mine);
+  var h = list.map(function(n){
+    return '<div class="alert'+(n.read?"":" unread")+'">'+esc(n.text)+'<small>'+fmt(n.ts)+'</small></div>';
+  }).join("");
+  if(list.some(function(n){ return !n.read; })){ list.forEach(function(n){ n.read = true; }); markRead(); }
+  return '<div class="card"><h2>การแจ้งเตือน</h2>'+(h||'<div class="empty">ยังไม่มีการแจ้งเตือน</div>')+'</div>';
+}
+function allTeams(){ var n = S.teams.map(function(t){return t.name;}); S.reqs.forEach(function(r){ if(n.indexOf(r.team)<0) n.push(r.team); }); return n; }
+function peopleOf(tn){ var t = team(tn), p = t ? t.members.slice() : []; S.reqs.forEach(function(r){ if(r.team===tn && p.indexOf(r.name)<0) p.push(r.name); }); return p; }
+function pendN(fn){ return S.reqs.filter(function(r){ return !st(r).done && fn(r); }).length; }
+function cnt(n){ return '<span class="cnt'+(n?"":" z")+'">'+n+'</span>'; }
+function handlers(){ var h = S.staff.slice(); S.reqs.forEach(function(r){ if(r.handler && h.indexOf(r.handler)<0) h.push(r.handler); }); return h; }
+function vQueue(){
+  var side = '<button class="tn'+(!qTeam?" on":"")+'" data-a="qt" data-v="">ทุกทีม'+cnt(pendN(function(){return true;}))+'</button>';
+  allTeams().forEach(function(tn){
+    side += '<button class="tn'+(qTeam===tn&&!qPerson?" on":"")+'" data-a="qt" data-v="'+esc(tn)+'">'+esc(tn)+cnt(pendN(function(r){return r.team===tn;}))+'</button>';
+    if(qTeam===tn){
+      peopleOf(tn).sort(function(a,b){ return pendN(function(r){return r.name===b&&r.team===tn;}) - pendN(function(r){return r.name===a&&r.team===tn;}); }).forEach(function(p){
+        side += '<button class="pn'+(qPerson===p?" on":"")+'" data-a="qp" data-v="'+esc(p)+'">'+esc(p)+cnt(pendN(function(r){return r.name===p&&r.team===tn;}))+'</button>';
+      });
+    }
+  });
+  var list = S.reqs.filter(function(r){
+    return (!qTeam||r.team===qTeam) && (!qPerson||r.name===qPerson) &&
+      (qf==="all" || stat(r)===qf) &&
+      (qh==="all" || (qh==="none" ? !r.handler : r.handler===qh));
+  }).sort(function(a,b){
+    var da = st(a).done, db = st(b).done;
+    if(da!==db) return da ? 1 : -1;
+    return da ? b.ts-a.ts : (a.need<b.need ? -1 : a.need>b.need ? 1 : 0);
+  });
+  var hs = handlers();
+  var cards = list.map(function(r){
+    var s = st(r);
+    var its = r.items.map(function(it,i){
+      return '<div class="irow2"><span>'+esc(it.gift)+'</span>'+
+        '<label>เบิก<input type="number" min="1" value="'+it.qty+'" data-rq="'+r.id+'" data-ri="'+i+'" data-k="qty"></label>'+
+        '<label>ได้รับแล้ว<input type="number" min="0" max="'+it.qty+'" value="'+it.given+'" data-rq="'+r.id+'" data-ri="'+i+'" data-k="given"></label></div>';
+    }).join("");
+    var ho = '<option value="">ยังไม่มอบหมาย</option>' + hs.map(function(x){ return '<option'+(x===r.handler?" selected":"")+'>'+esc(x)+'</option>'; }).join("");
+    return '<div class="rq'+(s.done?" isdone":"")+'"><div class="rqh"><div><b>'+esc(r.company)+'</b><div class="sub">ผู้เบิก '+esc(r.name)+' (ทีม '+esc(r.team)+')<br>ต้องการรับ '+fmtD(r.need)+'</div></div><div>'+tag(r)+'</div></div>'+its+
+      '<div class="rqf"><div><label>ผู้จัดการของ (ทีม Marketing)</label><select data-hd="'+r.id+'">'+ho+'</select></div>'+
+      (r.cancelled ? '<span class="sub">ยกเลิกเมื่อ '+fmt(r.cancelAt)+' ของที่ยังไม่ได้ส่งมอบคืนสต็อกแล้ว</span>' : s.done ? "" : '<button class="btn sm" data-a="all" data-v="'+r.id+'">ส่งมอบครบทั้งหมด</button> <button class="btn danger sm" data-a="cancel" data-v="'+r.id+'">Cancel</button>')+'</div></div>';
+  }).join("");
+  var scope = qPerson ? qPerson+" (ทีม "+qTeam+")" : (qTeam ? "ทีม "+qTeam : "ทุกทีม");
+  var chips = [["pending","Pending"],["done","Done"],["cancel","Cancel"],["all","ทั้งหมด"]].map(function(o){
+    return '<button class="chip'+(qf===o[0]?" on":"")+'" data-a="qf" data-v="'+o[0]+'">'+o[1]+'</button>'; }).join("");
+  var hopts = '<option value="all">ผู้ดูแลทุกคน</option><option value="none"'+(qh==="none"?" selected":"")+'>ยังไม่มอบหมาย</option>' +
+    hs.map(function(x){ return '<option'+(qh===x?" selected":"")+'>'+esc(x)+'</option>'; }).join("");
+  var ops = S.staff.map(function(x){ return '<option'+(x===S.mkMe?" selected":"")+'>'+esc(x)+'</option>'; }).join("");
+  return '<div class="card" style="padding:14px 18px"><div class="bar" style="margin:0"><div style="min-width:220px"><label for="op">คุณคือ (ผู้ใช้งานหลังบ้านตอนนี้)</label><select id="op">'+ops+'</select></div>'+
+    '<div class="sub">เมื่อกรอกจำนวนที่ส่งมอบ ระบบจะลงชื่อคุณเป็นผู้ดูแลให้อัตโนมัติถ้ายังไม่มีผู้ดูแล</div></div></div>'+
+    '<div class="ql"><div class="side">'+side+'</div><div><div class="bar"><div><h2 style="margin:0">'+esc(scope)+'</h2><div class="sub">'+list.length+' คำขอ</div></div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="chips">'+chips+'</div><select id="qh" style="width:auto" aria-label="กรองตามผู้ดูแล">'+hopts+'</select></div></div>'+
+    (cards || '<div class="card"><div class="empty">ไม่มีคำขอในหมวดนี้ เยี่ยมมาก</div></div>')+'</div></div>';
+}
+function vStock(){
+  var rows = S.stock.map(function(g,i){
+    return '<tr><td style="width:150px">'+thumbG(g,48)+'<div style="margin-top:6px"><label class="btn ghost sm" style="display:inline-block;margin:0;cursor:pointer">'+(g.img?"เปลี่ยนรูป":"เพิ่มรูป")+'<input type="file" accept="image/*" data-img="'+i+'" hidden></label>'+(g.img?' <button class="btn ghost sm" data-a="rmimg" data-v="'+i+'">ลบรูป</button>':"")+'</div></td><td><input data-s="'+i+'" data-k="name" value="'+esc(g.name)+'" aria-label="ชื่อ"></td>'+
+      '<td style="width:100px"><input data-s="'+i+'" data-k="qty" type="number" min="0" value="'+g.qty+'" aria-label="คงเหลือ"></td>'+
+      '<td style="width:110px"><input data-s="'+i+'" data-k="min" type="number" min="0" value="'+g.min+'" aria-label="เตือนเมื่อเหลือ"></td>'+
+      '<td>'+(g.qty<=g.min?'<span class="tag low">ใกล้หมด</span>':"")+'</td><td><button class="btn ghost sm" data-a="del" data-v="'+i+'">ลบ</button></td></tr>';
+  }).join("");
+  return '<div class="card"><h2>จัดการสต็อกของขวัญ</h2><div class="sub" style="margin-bottom:8px">แก้ไขแล้วบันทึกอัตโนมัติ รายการในฟอร์มเบิกจะอัปเดตตามทันที</div>'+
+    '<div class="scroll"><table><tr><th>รูป</th><th>ชื่อของขวัญ</th><th>คงเหลือ</th><th>เตือนเมื่อเหลือ</th><th></th><th></th></tr>'+rows+'</table></div>'+
+    '<p><button class="btn" data-a="addstock">เพิ่มของขวัญ</button></p></div>';
+}
+function vPeople(){
+  var staff = '<div class="card"><h2>ทีม Marketing (ผู้ดูแลคำขอ)</h2><div class="sub" style="margin-bottom:10px">รายชื่อนี้จะแสดงในช่อง “ผู้จัดการของ” ของทุกคำขอ</div>'+
+    S.staff.map(function(m,i){ return '<div class="irow3"><input data-sn="'+i+'" value="'+esc(m)+'" aria-label="ชื่อผู้ดูแล"><button class="btn ghost sm" data-a="delstaff" data-v="'+i+'">ลบ</button></div>'; }).join("")+
+    '<div class="irow3"><input id="ns" placeholder="ชื่อผู้ดูแลใหม่"><button class="btn sm" data-a="addstaff">เพิ่มชื่อ</button></div></div>';
+  var h = S.teams.map(function(t,ti){
+    return '<div class="card"><label>ชื่อทีมผู้เบิก</label><div class="irow3"><input data-tn="'+ti+'" value="'+esc(t.name)+'" aria-label="ชื่อทีม"><button class="btn ghost sm" data-a="delteam" data-v="'+ti+'">ลบทีม</button></div>'+
+      '<label>รายชื่อผู้เบิกในทีม ('+t.members.length+' คน)</label>'+
+      t.members.map(function(m,mi){
+        return '<div class="irow3"><input data-mn="'+ti+':'+mi+'" value="'+esc(m)+'" aria-label="ชื่อผู้เบิก"><button class="btn ghost sm" data-a="delmem" data-v="'+ti+':'+mi+'">ลบ</button></div>'; }).join("")+
+      '<div class="irow3"><input id="nm'+ti+'" placeholder="ชื่อผู้เบิกใหม่"><button class="btn sm" data-a="addmem" data-v="'+ti+'">เพิ่มชื่อ</button></div></div>';
+  }).join("");
+  return '<div class="sub" style="margin-bottom:12px">ทีมและรายชื่อที่ตั้งไว้ที่นี่จะแสดงเป็นตัวเลือกในฟอร์มเบิกทันที การเปลี่ยนชื่อจะอัปเดตประวัติคำขอเดิมด้วย</div>'+staff+h+
+    '<div class="card"><label>เพิ่มทีมผู้เบิกใหม่</label><div class="irow3"><input id="nt" placeholder="ชื่อทีม"><button class="btn" data-a="addteam">เพิ่มทีม</button></div></div>';
+}
+function bars(map, max){
+  var keys = Object.keys(map).sort(function(a,b){return map[b]-map[a];});
+  if(!keys.length) return '<div class="empty">ยังไม่มีข้อมูล</div>';
+  return keys.map(function(k){
+    return '<div class="row"><span>'+esc(k)+'</span><div class="track"><div class="fill" style="width:'+(map[k]/max*100)+'%"></div></div><b>'+map[k]+'</b></div>';
+  }).join("");
+}
+function mx(m){ return Math.max.apply(null, Object.keys(m).map(function(k){return m[k];}).concat([1])); }
+function vDash(){
+  var total = 0, byP = {}, byT = {}, byG = {}, byH = {}, byC = {};
+  S.reqs.forEach(function(r){
+    if(r.cancelled) return;
+    var hk = r.handler || "ยังไม่มอบหมาย"; byH[hk] = (byH[hk]||0) + 1;
+    byC[r.company] = (byC[r.company]||0) + r.items.reduce(function(a,it){ return a + it.qty; }, 0);
+    var p = byP[r.name] = byP[r.name] || {team:r.team, n:0, items:{}};
+    r.items.forEach(function(it){
+      total += it.qty; byT[r.team] = (byT[r.team]||0) + it.qty; byG[it.gift] = (byG[it.gift]||0) + it.qty;
+      p.n += it.qty; p.items[it.gift] = (p.items[it.gift]||0) + it.qty;
+    });
+  });
+  var pending = S.reqs.filter(function(r){return !st(r).done;}).length;
+  var low = S.stock.filter(function(g){return g.qty<=g.min;}).length;
+  var maxT = mx(byT), maxS = Math.max.apply(null, S.stock.map(function(g){return g.qty;}).concat([1]));
+  var tb = Object.keys(byT).sort(function(a,b){return byT[b]-byT[a];}).map(function(k){
+    return '<button class="row lr'+(dt===k?" on":"")+'" data-a="dt" data-v="'+esc(k)+'"><span>'+esc(k)+'</span><div class="track"><div class="fill" style="width:'+(byT[k]/maxT*100)+'%"></div></div><b>'+byT[k]+'</b></button>';
+  }).join("") || '<div class="empty">ยังไม่มีข้อมูล</div>';
+  var detail = '<div class="empty">กดที่ชื่อทีมด้านบนเพื่อดูว่าใครเบิกอะไรมากที่สุด</div>';
+  if(dt){
+    var ppl = Object.keys(byP).filter(function(k){return byP[k].team===dt;}).sort(function(a,b){return byP[b].n-byP[a].n;});
+    var mp = ppl.length ? byP[ppl[0]].n : 1;
+    detail = '<h2>ทีม '+esc(dt)+': ใครเบิกอะไรบ้าง</h2>'+ppl.map(function(k,i){
+      var p = byP[k], its = Object.keys(p.items).sort(function(a,b){return p.items[b]-p.items[a];}).map(function(g){return esc(g)+" × "+p.items[g];}).join(", ");
+      return '<div style="margin-bottom:12px"><div class="row"><span>'+esc(k)+'</span><div class="track"><div class="fill" style="width:'+(p.n/mp*100)+'%"></div></div><b>'+p.n+'</b></div>'+
+        '<div class="sub">'+(i===0?'<span class="tag wait">เบิกมากที่สุด</span> ':"")+its+'</div></div>';
+    }).join("");
+  }
+  var rank = Object.keys(byP).sort(function(a,b){return byP[b].n-byP[a].n;});
+  var prow = (showAllP ? rank : rank.slice(0,5)).map(function(k,i){
+    var p = byP[k];
+    return "<tr><td>"+(i+1)+". "+esc(k)+"<br><span class='sub'>ทีม "+esc(p.team)+"</span></td><td><b>"+p.n+"</b></td><td>"+
+      Object.keys(p.items).map(function(g){return esc(g)+" × "+p.items[g];}).join("<br>")+"</td></tr>";
+  }).join("");
+  var stockBars = S.stock.map(function(g){
+    return '<div class="row"><span>'+esc(g.name)+'</span><div class="track"><div class="fill" style="width:'+(g.qty/maxS*100)+'%"></div><div class="min" style="left:'+(g.min/maxS*100)+'%"></div></div><b>'+g.qty+'</b></div>';
+  }).join("");
+  return '<div class="kpis"><div class="kpi"><b>'+total+'</b><span>ชิ้นที่เบิกทั้งหมด</span></div><div class="kpi"><b>'+S.reqs.filter(function(r){return !r.cancelled;}).length+'</b><span>คำขอ</span></div><div class="kpi"><b>'+pending+'</b><span>คำขอ pending</span></div><div class="kpi"><b>'+low+'</b><span>รายการใกล้หมด</span></div></div>'+
+    '<div class="dash2">'+'<div class="card"><h2>ยอดเบิกรายทีม</h2>'+tb+'<hr style="border:0;border-top:1px solid var(--line);margin:14px 0">'+detail+'</div>'+'<div class="card"><h2>ของขวัญที่เบิกมากที่สุด</h2>'+bars(byG,mx(byG))+'</div></div>'+
+    '<div class="card"><div class="bar" style="margin-bottom:8px"><h2 style="margin:0">ใครเบิกอะไรไปบ้าง ('+(showAllP?"ทั้งหมด "+rank.length+" คน":"5 อันดับแรก")+')</h2>'+('<button class="btn ghost sm" data-a="allp">'+(showAllP?"แสดง 5 อันดับแรก":"ดูทั้งหมด ("+rank.length+" คน)")+'</button>')+'</div><div class="scroll"><table><tr><th>ผู้เบิก</th><th>รวม (ชิ้น)</th><th>รายการ</th></tr>'+prow+'</table></div></div>'+
+    '<div class="dash2"><div class="card"><h2>ลูกค้าที่เบิกมากที่สุด</h2>'+bars(topN(byC,5),mx(topN(byC,5)))+'</div><div class="card"><h2>สต็อกคงเหลือ</h2><div class="sub" style="margin-bottom:6px">เส้นแดง = จุดที่ต้องเตือน</div>'+stockBars+'</div></div>';
+}
+function thumbG(g, s){
+  if(g && g.img) return '<img class="thumb" style="width:'+s+'px;height:'+s+'px" src="'+g.img+'" alt="">';
+  return '<div class="thumb ph" style="width:'+s+'px;height:'+s+'px">'+px(GIFT, Math.floor(s/16))+'</div>';
+}
+function thumb(name, s){ return thumbG(gs(name), s); }
+function topN(m, n){ var o = {}; Object.keys(m).sort(function(a,b){return m[b]-m[a];}).slice(0,n).forEach(function(k){ o[k] = m[k]; }); return o; }
+function resizeImg(file, cb){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var im = new Image();
+    im.onload = function(){
+      var s = 200, c = document.createElement("canvas"); c.width = s; c.height = s;
+      var side = Math.min(im.width, im.height), sx = (im.width-side)/2, sy = (im.height-side)/2;
+      var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0,0,s,s); x.drawImage(im, sx, sy, side, side, 0, 0, s, s);
+      try { cb(c.toDataURL("image/jpeg", 0.7)); } catch(e){ cb(null); }
+    };
+    im.onerror = function(){ cb(null); };
+    im.src = fr.result;
+  };
+  fr.onerror = function(){ cb(null); };
+  fr.readAsDataURL(file);
+}
+function askModal(msg, yes){
+  var o = document.createElement("div"); o.className = "mask";
+  o.innerHTML = '<div class="dlg" role="dialog" aria-modal="true"><div class="dlg-t">'+esc(msg)+'</div><div class="dlg-b"><button class="btn ghost sm" data-x="no">ไม่ใช่</button><button class="btn danger sm" data-x="yes">ยืนยัน</button></div></div>';
+  o.addEventListener("click", function(e){
+    var x = e.target.getAttribute && e.target.getAttribute("data-x");
+    if(x==="yes"){ o.remove(); yes(); } else if(x==="no" || e.target===o){ o.remove(); }
+  });
+  document.body.appendChild(o); o.querySelector('[data-x="yes"]').focus();
+}
+function px(map, s, cls){
+  var w = map[0].length, h = map.length, r = "";
+  map.forEach(function(row, y){ for(var x=0; x<w; x++){ var c = row.charAt(x); if(c!==".") r += '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+PAL[c]+'"/>'; } });
+  return '<svg class="px'+(cls?" "+cls:"")+'" viewBox="0 0 '+w+' '+h+'" width="'+(w*s)+'" height="'+(h*s)+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>';
+}
+function decorate(){
+  var v = document.getElementById("view");
+  v.querySelectorAll(".empty").forEach(function(e){ e.insertAdjacentHTML("afterbegin", '<div class="pxc">'+px(CAT,4)+'</div>'); });
+  if(screen==="home") v.insertAdjacentHTML("afterbegin", '<div class="hero">'+px(CAT,8,"bob")+'<div><div class="hero-t">HAPPY NEW YEAR!</div><div class="sub">เลือกบริษัทเพื่อเริ่มเบิกของขวัญ</div></div><div style="display:flex;gap:8px;margin-left:auto">'+px(STAR,4)+px(HEART,4)+px(STAR,4)+'</div></div>');
+}
+var PAL = {k:"var(--pk)", r:"#e0384f", R:"#ff5a73", y:"#ffd24a", o:"#f08a2e", w:"#fff4e0"};
+var GIFT = ["...kk..kk...","..kyykkyyk..","..kyyyyyyk..","...kkyykk...",".kkkkyykkkk.",".krrryyrrrk.",".krrryyrrrk.",".kkkkyykkkk.",".krrryyrrrk.",".krrryyrrrk.",".krrryyrrrk.",".kkkkkkkkkk."];
+var CAT = [".kk......kk.",".kok....kok.",".kookkkkook.","kooooooooook","kookooookook","kookooookook","koowwwwwwook","koowwkkwwook",".koowwwwook.","..kkkkkkkk.."];
+var HEART = [".kk.kk.","kRRkRRk","kRRRRRk",".kRRRk.","..kRk..","...k..."];
+var STAR = ["...k...","..kyk..","kkkykkk","kyyyyyk",".kyyyk.",".kykyk.","..k.k.."];
+/* ===== config & state ===== */
+var CFG = window.APP_CONFIG || {companies:[]};
+var S = {stock:[], teams:[], staff:[], reqs:[], notes:[], me:"", mkMe:"", name:""};
+var co = null, token = null, role = "sale", tab = "form", screen = "home";
+var qf = "pending", qh = "all", qTeam = null, qPerson = null, dt = null, showAllP = false;
+var loginCo = "", errMsg = "", pending = 0;
+var F = {team:"", name:"", company:"", need:addDays(7), items:[{gift:"",qty:1}]};
+function getCo(c){ return CFG.companies.filter(function(x){ return x.code===c; })[0]; }
+function curCo(){ return getCo(co) || {name:"", code:"", api:""}; }
+function lsGet(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+function ssGet(k){ try { return sessionStorage.getItem(k) || ""; } catch(e){ return ""; } }
+function ssSet(k, v){ try { sessionStorage.setItem(k, v); } catch(e){} }
+function remember(){ lsSet("gift-me-"+co, S.me || ""); lsSet("gift-op-"+co, S.mkMe || ""); }
+function setHash(h){ try { if(location.hash.slice(1) !== h) location.hash = h; } catch(e){} }
+function wait(n){ pending += n; document.body.classList.toggle("wait", pending > 0); }
+
+/* ===== API (Google Apps Script web app) ===== */
+function api(action, data){
+  var c = curCo();
+  if(!c.api || c.api.indexOf("XXXX") >= 0) return Promise.reject(new Error("ยังไม่ได้ตั้งค่า API ของบริษัทนี้ในไฟล์ config.js"));
+  var body = JSON.stringify(Object.assign({action:action, token:token}, data || {}));
+  wait(1);
+  return fetch(c.api, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:body})
+    .then(function(r){ return r.json(); })
+    .then(function(j){ wait(-1); if(!j.ok) throw new Error(j.error || "เกิดข้อผิดพลาด"); return j.data; },
+          function(){ wait(-1); throw new Error("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้ง"); });
+}
+function loadPublic(){ return api("init").then(function(d){ S.name = d.name; S.stock = d.stock; S.teams = d.teams; }); }
+function loadMine(){
+  if(!S.me){ S.reqs = []; S.notes = []; return Promise.resolve(); }
+  return api("mine", {name:S.me}).then(function(d){ S.reqs = d.reqs; S.notes = d.notes; });
+}
+function loadAdmin(){
+  return api("adminData").then(function(d){
+    S.name = d.name; S.stock = d.stock; S.teams = d.teams; S.staff = d.staff; S.reqs = d.reqs; S.notes = d.notes;
+    if(!S.mkMe || S.staff.indexOf(S.mkMe) < 0) S.mkMe = S.staff[0] || "";
+  });
+}
+function refresh(){ return (role==="mkt" ? loadAdmin() : loadPublic().then(loadMine)).then(render); }
+function markRead(){ api(role==="mkt" ? "markReadMkt" : "markRead", {name:S.me}).catch(function(){}); }
+function onErr(e){
+  if(e.message === "unauthorized"){
+    toast("หมดเวลาเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่");
+    token = null; ssSet("gift-token-"+co, ""); role = "sale"; tab = "form"; loginCo = co; screen = "login"; render();
+  } else toast(e.message);
+}
+function busy(p, ok){
+  return p.then(function(){ if(ok) toast(ok); return refresh(); }).catch(function(e){ onErr(e); if(screen==="app") refresh().catch(function(){}); });
+}
+function goLoad(){
+  screen = "loading"; render();
+  return refresh().then(function(){
+    if(role==="sale" && S.me && !F.name){
+      var tm = S.teams.filter(function(t){ return t.members.indexOf(S.me) >= 0; })[0];
+      if(tm){ F.team = tm.name; F.name = S.me; }
+    }
+    screen = "app"; render();
+  }).catch(function(e){
+    if(e.message === "unauthorized") return onErr(e);
+    errMsg = e.message; screen = "error"; render();
+  });
+}
+function enter(code, r){
+  co = code; token = ssGet("gift-token-"+code) || null;
+  S = {stock:[], teams:[], staff:[], reqs:[], notes:[], me:lsGet("gift-me-"+code), mkMe:lsGet("gift-op-"+code), name:getCo(code).name};
+  role = (r==="mkt" && token) ? "mkt" : "sale"; tab = role==="mkt" ? "queue" : "form";
+  F = {team:"", name:"", company:"", need:addDays(7), items:[{gift:"",qty:1}]};
+  qf = "pending"; qh = "all"; qTeam = null; qPerson = null; dt = null; showAllP = false;
+  setHash(code); goLoad();
+}
+
+/* ===== screens ===== */
+function render(){
+  var nav = document.getElementById("nav"), view = document.getElementById("view");
+  if(screen === "app") renderApp();
+  else {
+    renderTop(); nav.innerHTML = "";
+    view.innerHTML = ({home:vHome, login:vLogin, loading:vLoading, error:vError}[screen])();
+  }
+  decorate();
+}
+function renderTop(){
+  var el = document.getElementById("top");
+  if(screen === "app"){
+    var m = role === "mkt";
+    el.innerHTML = '<div><h1>'+esc(S.name || curCo().name)+'</h1><div class="sub">เบิกของขวัญปีใหม่'+(m ? " (หลังบ้าน)" : "")+'</div></div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="seg" role="group" aria-label="เลือกบทบาท">'+
+      '<button data-a="role-sale" aria-pressed="'+(!m)+'">ผู้เบิก</button>'+
+      '<button data-a="role-mkt" aria-pressed="'+m+'">'+(token ? "หลังบ้าน" : "หลังบ้าน (ล็อกอิน)")+'</button></div>'+
+      '<button class="btn ghost sm" data-a="refresh">รีเฟรช</button>'+
+      '<button class="btn ghost sm" data-a="'+(token ? "logout" : "home")+'">'+(token ? "ออกจากระบบ" : "เปลี่ยนบริษัท")+'</button></div>';
+  } else if(screen === "loading" || screen === "error"){
+    el.innerHTML = '<div><h1>'+esc(curCo().name)+'</h1><div class="sub">เบิกของขวัญปีใหม่</div></div>'+
+      '<button class="btn ghost sm" data-a="home">เปลี่ยนบริษัท</button>';
+  } else {
+    el.innerHTML = '<div><h1>เบิกของขวัญปีใหม่</h1></div>'+(screen==="home" ? "" : '<button class="btn ghost sm" data-a="home">กลับหน้าแรก</button>');
+  }
+  el.insertAdjacentHTML("afterbegin", px(GIFT, 4));
+}
+function vHome(){
+  var rows = CFG.companies.map(function(c){
+    return '<div class="co-row"><div class="cname">'+esc(c.name)+'</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn ghost sm" data-a="enter" data-v="'+esc(c.code)+'">เบิกของขวัญ</button>'+
+      '<button class="btn sm" data-a="golog" data-v="'+esc(c.code)+'">เข้าหลังบ้าน</button></div></div>';
+  }).join("");
+  return '<div class="card"><h2>เลือกบริษัท</h2>'+(rows || '<div class="empty">ยังไม่มีบริษัทในไฟล์ config.js</div>')+'</div>';
+}
+function vLogin(){
+  var opts = CFG.companies.map(function(c){ return '<option value="'+esc(c.code)+'"'+(c.code===loginCo?" selected":"")+'>'+esc(c.name)+'</option>'; }).join("");
+  return '<form id="login" class="card" style="max-width:440px;margin:0 auto"><h2>เข้าสู่ระบบหลังบ้าน</h2>'+
+    '<div class="fld"><label for="lc">บริษัท</label><select id="lc">'+opts+'</select></div>'+
+    '<div class="fld"><label for="lu">ชื่อผู้ใช้</label><input id="lu" autocomplete="username"></div>'+
+    '<div class="fld"><label for="lp">รหัสผ่าน</label><input id="lp" type="password" autocomplete="current-password"></div>'+
+    '<button class="btn" type="submit">เข้าสู่ระบบ</button></form>';
+}
+function vLoading(){ return '<div class="card"><div class="empty">กำลังโหลดข้อมูล...</div></div>'; }
+function vError(){
+  return '<div class="card"><div class="empty">'+esc(errMsg)+'</div><p style="text-align:center"><button class="btn" data-a="retry">ลองอีกครั้ง</button></p></div>';
+}
+
+/* ===== confirm dialogs (in-page) ===== */
+var CF = {
+  cancel:function(v){ var r = S.reqs.filter(function(x){return x.id==v;})[0]; return "ยกเลิกคำขอของ “"+r.company+"”? ของที่ยังไม่ได้ส่งมอบจะถูกคืนเข้าสต็อก"; },
+  del:function(v){ return "ลบ “"+S.stock[v].name+"” ออกจากรายการ?"; },
+  delteam:function(v){ return "ลบทีม “"+S.teams[v].name+"” และรายชื่อทั้งหมด? (ประวัติคำขอเดิมยังอยู่)"; },
+  delstaff:function(v){ return "ลบ “"+S.staff[v]+"” ออกจากรายชื่อผู้ดูแล? (คำขอเดิมยังแสดงชื่อนี้)"; }
+};
+
+/* ===== events ===== */
+var view = document.getElementById("view");
+view.addEventListener("input", function(e){ if(e.target.id === "fc") F.company = e.target.value; });
+view.addEventListener("submit", function(e){
+  e.preventDefault();
+  if(pending > 0) return;
+  var q = function(i){ return document.getElementById(i).value; };
+  if(e.target.id === "login"){
+    var c = getCo(q("lc")); co = c.code; token = null;
+    api("login", {user:q("lu").trim(), pass:q("lp")}).then(function(d){
+      ssSet("gift-token-"+co, d.token); enter(co, "mkt");
+    }).catch(function(err){ toast(err.message); });
+    return;
+  }
+  if(e.target.id !== "f") return;
+  var its = F.items.filter(function(i){ return i.gift && i.qty > 0; });
+  if(!F.team || !F.name || !F.company.trim() || !F.need || !its.length){ toast("กรุณากรอกทีม ชื่อ บริษัท วันที่ต้องการรับ และเลือกของขวัญอย่างน้อย 1 รายการ"); return; }
+  if(F.need < addDays(0)){ toast("วันที่ต้องการรับของต้องไม่ใช่วันที่ผ่านมาแล้ว"); return; }
+  api("submit", {team:F.team, name:F.name, company:F.company.trim(), need:F.need, items:its}).then(function(){
+    S.me = F.name; remember(); F.company = ""; F.need = addDays(7); F.items = [{gift:"",qty:1}];
+    toast("ส่งคำขอแล้ว"); tab = "mine"; return refresh();
+  }).catch(function(err){ toast(err.message); refresh().catch(function(){}); });
+});
+view.addEventListener("change", function(e){
+  var t = e.target, a = function(k){ return t.getAttribute(k); }, v = t.value;
+  if(t.id === "ft"){ F.team = v; F.name = ""; render(); return; }
+  if(t.id === "fn"){ F.name = v; S.me = v; remember(); return; }
+  if(t.id === "fc"){ F.company = v; return; }
+  if(t.id === "fd"){ F.need = v; return; }
+  if(t.id === "qh"){ qh = v; render(); return; }
+  if(t.id === "op"){ S.mkMe = v; remember(); toast("ใช้งานในนาม "+v); return; }
+  if(a("data-fi") !== null){ var it = F.items[a("data-fi")]; if(a("data-k")==="qty") it.qty = Math.max(1, parseInt(v,10)||1); else it.gift = v; return; }
+  if(a("data-hd") !== null){ busy(api("setHandler", {reqId:+a("data-hd"), handler:v}), "บันทึกแล้ว"); return; }
+  if(a("data-rq") !== null){
+    var r = S.reqs.filter(function(x){ return x.id === +a("data-rq"); })[0], item = r.items[+a("data-ri")], n = Math.max(0, parseInt(v,10)||0);
+    if(a("data-k") === "qty") busy(api("setQty", {reqId:r.id, gift:item.gift, qty:n}), "บันทึกแล้ว");
+    else busy(api("setGiven", {reqId:r.id, gift:item.gift, given:n, by:S.mkMe}), "บันทึกแล้ว");
+    return;
+  }
+  if(a("data-img") !== null){
+    var f0 = t.files && t.files[0], gid = S.stock[+a("data-img")].id;
+    if(!f0) return;
+    resizeImg(f0, function(url){
+      if(!url){ toast("เปิดรูปนี้ไม่ได้ ลองใช้ไฟล์ภาพอื่น"); return; }
+      busy(api("stockImg", {id:gid, img:url}), "เพิ่มรูปแล้ว");
+    });
+    return;
+  }
+  if(a("data-s") !== null){
+    var g = S.stock[+a("data-s")], k = a("data-k"), o = {id:g.id, name:g.name, qty:g.qty, min:g.min};
+    o[k] = v; busy(api("stockSave", o), "บันทึกแล้ว"); return;
+  }
+  if(a("data-sn") !== null){ busy(api("staffRename", {from:S.staff[+a("data-sn")], to:v}), "บันทึกแล้ว"); return; }
+  if(a("data-tn") !== null){ busy(api("teamRename", {from:S.teams[+a("data-tn")].name, to:v}), "บันทึกแล้ว"); return; }
+  if(a("data-mn") !== null){
+    var p = a("data-mn").split(":"), tm = S.teams[+p[0]];
+    busy(api("memRename", {team:tm.name, from:tm.members[+p[1]], to:v}), "บันทึกแล้ว");
+  }
+});
+view.addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
+document.getElementById("nav").addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
+document.getElementById("top").addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
+function bg(){ if(["form","mine","notes","queue","dash"].indexOf(tab) >= 0) refresh().catch(function(){}); }
+function val(id){ var el = document.getElementById(id); return el ? el.value.trim() : ""; }
+function act(b){
+  if(!b) return;
+  var a = b.getAttribute("data-a"), v = b.getAttribute("data-v");
+  if(CF[a] && !b._ok){ askModal(CF[a](v), function(){ b._ok = true; act(b); }); return; }
+  if(a === "tab"){ tab = v; render(); bg(); return; }
+  if(a === "role-sale"){ role = "sale"; tab = "form"; goLoad(); return; }
+  if(a === "role-mkt"){
+    if(token){ role = "mkt"; tab = "queue"; goLoad(); } else { loginCo = co; screen = "login"; render(); }
+    return;
+  }
+  if(a === "home" || a === "logout"){
+    if(a === "logout" && token){ api("logout").catch(function(){}); token = null; ssSet("gift-token-"+co, ""); }
+    screen = "home"; co = null; setHash(""); render(); return;
+  }
+  if(a === "enter"){ enter(v, "sale"); return; }
+  if(a === "golog"){ loginCo = v; screen = "login"; render(); return; }
+  if(a === "retry"){ enter(co, role); return; }
+  if(a === "refresh"){ refresh().then(function(){ toast("อัปเดตข้อมูลแล้ว"); }).catch(onErr); return; }
+  if(a === "addi"){ F.items.push({gift:"",qty:1}); }
+  else if(a === "rmi"){ F.items.splice(v,1); }
+  else if(a === "qt"){ qTeam = v || null; qPerson = null; }
+  else if(a === "qp"){ qPerson = (qPerson===v) ? null : v; }
+  else if(a === "qf"){ qf = v; }
+  else if(a === "dt"){ dt = (dt===v) ? null : v; }
+  else if(a === "allp"){ showAllP = !showAllP; }
+  else if(a === "pick"){
+    var gp = S.stock[v], ex = F.items.filter(function(it){ return it.gift===gp.name; })[0];
+    if(ex) ex.qty += 1;
+    else { var em = F.items.filter(function(it){ return !it.gift; })[0]; if(em){ em.gift = gp.name; em.qty = Math.max(1, em.qty); } else F.items.push({gift:gp.name, qty:1}); }
+  }
+  else if(a === "all"){ busy(api("deliverAll", {reqId:+v, by:S.mkMe}), "ส่งมอบครบแล้ว"); return; }
+  else if(a === "cancel"){ busy(api("cancel", {reqId:+v, by:S.mkMe}), "ยกเลิกคำขอแล้ว"); return; }
+  else if(a === "del"){ busy(api("stockDel", {id:S.stock[v].id}), "ลบแล้ว"); return; }
+  else if(a === "addstock"){ busy(api("stockAdd"), "เพิ่มของขวัญแล้ว"); return; }
+  else if(a === "rmimg"){ busy(api("stockImg", {id:S.stock[v].id, img:""}), "ลบรูปแล้ว"); return; }
+  else if(a === "addteam"){ busy(api("teamAdd", {name:val("nt")}), "เพิ่มทีมแล้ว"); return; }
+  else if(a === "delteam"){ busy(api("teamDel", {name:S.teams[v].name}), "ลบทีมแล้ว"); return; }
+  else if(a === "addmem"){ busy(api("memAdd", {team:S.teams[v].name, name:val("nm"+v)}), "เพิ่มชื่อแล้ว"); return; }
+  else if(a === "delmem"){ var q = v.split(":"), tm = S.teams[q[0]]; busy(api("memDel", {team:tm.name, name:tm.members[q[1]]}), "ลบชื่อแล้ว"); return; }
+  else if(a === "addstaff"){ busy(api("staffAdd", {name:val("ns")}), "เพิ่มผู้ดูแลแล้ว"); return; }
+  else if(a === "delstaff"){ busy(api("staffDel", {name:S.staff[v]}), "ลบผู้ดูแลแล้ว"); return; }
+  render();
+}
+window.addEventListener("hashchange", function(){
+  var h = location.hash.slice(1);
+  if(h && h !== co && getCo(h)) enter(h, "sale");
+});
+setInterval(function(){
+  if(screen !== "app" || pending > 0 || tab === "form" || document.querySelector(".mask")) return;
+  var ae = document.activeElement;
+  if(ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;
+  refresh().catch(function(){});
+}, 60000);
+var h0 = location.hash.slice(1);
+if(h0 && getCo(h0)) enter(h0, "sale"); else render();
+
+</script>
+</body>
+</html>
