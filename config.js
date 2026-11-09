@@ -4,7 +4,6 @@
 // api   = URL ของ Web app ที่ได้จากการ Deploy Apps Script ของบริษัทนั้น (ลงท้ายด้วย /exec)
 window.APP_CONFIG = {
   companies: [
-    { code: "alpha", name: "บริษัท อัลฟ่า จำกัด", api: "https://script.google.com/macros/s/XXXX-ใส่-URL-ของอัลฟ่า/exec" },
-    { code: "beta",  name: "บริษัท เบต้า จำกัด",  api: "https://script.google.com/macros/s/XXXX-ใส่-URL-ของเบต้า/exec" }
+    { code: "Get On", name: "Get On Technology", api: "https://script.google.com/macros/s/AKfycbwgWTRNqoIwWO2FN4IGP6L7uNT5ZUjKiykg_Q9uJ2wq9Rh4F-_8_VgU31b574hnSAlFUw/exec" }
   ]
 };
