@@ -455,17 +455,62 @@ function setHash(h){ try { if(location.hash.slice(1) !== h) location.hash = h; }
 function wait(n){ pending += n; document.body.classList.toggle("wait", pending > 0); }
 
 /* ===== API (Google Apps Script web app) ===== */
+// Log action names and timing only; never log passwords, tokens or customer data.
 function api(action, data){
   var c = curCo();
-  if(!c.api || c.api.indexOf("XXXX") >= 0) return Promise.reject(new Error("ยังไม่ได้ตั้งค่า API ของบริษัทนี้ในไฟล์ config.js"));
+  var endpoint = String(c.api || "").trim();
+  if(!endpoint || endpoint.indexOf("XXXX") >= 0 || endpoint.indexOf("PASTE_") >= 0 ||
+     !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:\?.*)?$/.test(endpoint)) {
+    return Promise.reject(new Error("ยังไม่ได้ใส่ URL Web App /exec ที่ถูกต้องใน config.js สำหรับ " + (c.name || "บริษัทนี้")));
+  }
+
+  var isRead = action === "init" || action === "mine" || action === "adminData";
+  // Never silently retry writes: a timed-out write may still have succeeded on the server.
+  var timeoutMs = isRead ? 35000 : 90000;
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, timeoutMs);
+  var started = performance.now();
   var body = JSON.stringify(Object.assign({action:action, token:token}, data || {}));
   wait(1);
-  return fetch(c.api, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:body})
-    .then(function(r){ return r.json(); })
-    .then(function(j){ wait(-1); if(!j.ok) throw new Error(j.error || "เกิดข้อผิดพลาด"); return j.data; },
-          function(){ wait(-1); throw new Error("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้ง"); });
+  return fetch(endpoint, {
+    method: "POST", redirect: "follow",
+    headers: {"Content-Type": "text/plain;charset=utf-8"},
+    body: body, signal: controller.signal
+  }).then(function(r){
+    if(!r.ok) throw new Error("เซิร์ฟเวอร์ตอบ HTTP " + r.status + " (ตรวจ Deployment และสิทธิ์เข้าถึง Apps Script)");
+    return r.text().then(function(txt){
+      try { return JSON.parse(txt); }
+      catch(e) { throw new Error("API ตอบกลับไม่ใช่ JSON (อาจเป็นหน้า Login/สิทธิ์/Redirect ของ Google)"); }
+    });
+  }).then(function(j){
+    if(!j || typeof j !== "object") throw new Error("รูปแบบข้อมูล API ไม่ถูกต้อง");
+    if(!j.ok) throw new Error(j.error || "เกิดข้อผิดพลาดจาก Apps Script");
+    return j.data;
+  }).catch(function(e){
+    if(e && e.name === "AbortError") {
+      throw new Error(isRead
+        ? "โหลดข้อมูลเกิน 35 วินาที กรุณาตรวจ Apps Script → Executions และ Network"
+        : "คำสั่งใช้เวลานานเกินไป โปรดตรวจรายการ/สต็อกก่อนกดซ้ำ เพราะเซิร์ฟเวอร์อาจบันทึกสำเร็จแล้ว");
+    }
+    if(e instanceof TypeError) {
+      throw new Error("เชื่อมต่อ Apps Script ไม่ได้ (อาจเป็น CORS, เครือข่าย หรือสิทธิ์ Deployment) กรุณาดู Console/Network");
+    }
+    throw e;
+  }).finally(function(){
+    clearTimeout(timer);
+    wait(-1);
+    console.info("[Gift API]", action, Math.round(performance.now() - started) + " ms");
+  });
 }
-function loadPublic(){ return api("init").then(function(d){ S.name = d.name; S.stock = d.stock; S.teams = d.teams; }); }
+
+function loadPublic(){
+  return api("init").then(function(d){
+    if(!d || !Array.isArray(d.stock) || !Array.isArray(d.teams)) {
+      throw new Error("ข้อมูล init จาก Apps Script ไม่ครบ (stock/teams)");
+    }
+    S.name = d.name; S.stock = d.stock; S.teams = d.teams;
+  });
+}
 function loadMine(){
   if(!S.me){ S.reqs = []; S.notes = []; return Promise.resolve(); }
   return api("mine", {name:S.me}).then(function(d){ S.reqs = d.reqs; S.notes = d.notes; });
@@ -476,7 +521,15 @@ function loadAdmin(){
     if(!S.mkMe || S.staff.indexOf(S.mkMe) < 0) S.mkMe = S.staff[0] || "";
   });
 }
-function refresh(){ return (role==="mkt" ? loadAdmin() : loadPublic().then(loadMine)).then(render); }
+var refreshInFlight = null, lastDataLoadedAt = 0;
+function refresh(){
+  if(refreshInFlight) return refreshInFlight;
+  // init and mine are independent reads; run together instead of two serial round trips.
+  var p = (role === "mkt" ? loadAdmin() : Promise.all([loadPublic(), loadMine()]))
+    .then(function(){ lastDataLoadedAt = Date.now(); render(); });
+  refreshInFlight = p.finally(function(){ refreshInFlight = null; });
+  return refreshInFlight;
+}
 function markRead(){ api(role==="mkt" ? "markReadMkt" : "markRead", {name:S.me}).catch(function(){}); }
 function onErr(e){
   if(e.message === "unauthorized"){
@@ -628,7 +681,7 @@ view.addEventListener("change", function(e){
 view.addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
 document.getElementById("nav").addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
 document.getElementById("top").addEventListener("click", function(e){ act(e.target.closest("[data-a]")); });
-function bg(){ if(["form","mine","notes","queue","dash"].indexOf(tab) >= 0) refresh().catch(function(){}); }
+function bg(){ if(Date.now() - lastDataLoadedAt < 20000 || pending > 0) return; if(["form","mine","notes","queue","dash"].indexOf(tab) >= 0) refresh().catch(function(){}); }
 function val(id){ var el = document.getElementById(id); return el ? el.value.trim() : ""; }
 function act(b){
   if(!b) return;
