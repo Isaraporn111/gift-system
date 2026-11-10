@@ -1,15 +1,9 @@
-// สำคัญ: เปลี่ยน URL ทั้งสองรายการด้านล่างให้เป็น URL จริงที่ลงท้ายด้วย /exec จาก Apps Script ก่อนอัปโหลด
-// หากมีเพียงหนึ่งบริษัท ให้ลบบรรทัดบริษัทที่ยังไม่ได้ใช้
-// ตั้งค่าบริษัทในเครือ: 1 บริษัท = 1 บรรทัด
-// code  = รหัสสั้น ๆ ภาษาอังกฤษ (ใช้ต่อท้ายลิงก์ เช่น .../#alpha)
-// name  = ชื่อที่แสดงบนหน้าเว็บ
-// api   = URL ของ Web app ที่ได้จากการ Deploy Apps Script ของบริษัทนั้น (ลงท้ายด้วย /exec)
+// Gift System Supabase Preview configuration.
+// Replace ONLY the public Project URL and publishable key.
+// Never place a secret/service_role key, database password, or user's password here.
 window.APP_CONFIG = {
-  companies: [
-    {
-      code: "got",
-      name: "Get On Technology",
-      api: "https://script.google.com/macros/s/AKfycbwgWTRNqoIwWO2FN4IGP6L7uNT5ZUjKiykg_Q9uJ2wq9Rh4F-_8_VgU31b574hnSAlFUw/exec"
-    }
-  ]
+  companyCode: "got",
+  companyName: "Get On Technology",
+  supabaseUrl: "https://qmqvhhvxdlsxxbmqxmwy.supabase.co",
+  supabasePublishableKey: "sb_publishable_kfXHgt1EEfi-lLn0apxlNA_OHH4LbGO"
 };
