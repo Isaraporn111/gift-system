@@ -4,7 +4,7 @@
 const C = window.APP_CONFIG || {};
 const $ = id => document.getElementById(id);
 const e = s => String(s ?? "").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const ui = { user:null, profile:null, stock:[], adminProducts:[], editProductId:'TEST-ONLY-001', requests:[], items:[], notes:[], tab:'stock', busy:false, message:'' };
+const ui = { user:null, profile:null, stock:[], adminProducts:[], editProductId:'TEST-ONLY-001', requests:[], items:[], notes:[], tab:'stock', adminOrderFilter:'all', adminOrderSearch:'', busy:false, message:'' };
 const sbReady = typeof window.supabase?.createClient === 'function' &&
   /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(C.supabaseUrl || '') &&
   /^sb_publishable_/.test(C.supabasePublishableKey || '') &&
@@ -24,10 +24,10 @@ function render(){header();
  if(!ui.user || !ui.profile){ $('nav').innerHTML='';$('view').innerHTML=`<div class="card form-card"><h2>เข้าสู่ระบบ</h2><form id="login-form"><div class="fld"><label for="email">อีเมล Supabase Auth</label><input id="email" type="email" required autocomplete="username"></div><div class="fld"><label for="password">รหัสผ่าน</label><input id="password" type="password" required autocomplete="current-password"></div><button class="btn" type="submit" ${ui.busy?'disabled':''}>${ui.busy?'กำลังตรวจสอบ...':'เข้าสู่ระบบ'}</button></form>${ui.message}</div>`;
  $('login-form').onsubmit=async ev=>{ev.preventDefault();let em=$('email').value,pass=$('password').value;ui.busy=true;render();try{const d=requireOk(await db.auth.signInWithPassword({email:em,password:pass}),'Login');ui.user=d.user;ui.message='';await loadData()}catch(err){showError(err)}finally{ui.busy=false;render()}};return}
  let isAdmin=ui.profile?.role==='admin';
- const tabs=[['stock','รายการสินค้า'],['mine',isAdmin?'คำขอทั้งหมด':'คำขอของฉัน'],['request','เบิกของทดสอบ']];if(isAdmin){tabs.push(['admin-stock','จัดการสินค้า']);tabs.push(['admin','Admin ทดสอบ']);}
+ const tabs=[['stock','รายการสินค้า'],['mine',isAdmin?'คำขอทั้งหมด':'คำขอของฉัน'],['request','เบิกของทดสอบ']];if(isAdmin){tabs.push(['admin-stock','จัดการสินค้า']);tabs.push(['admin-orders','จัดการคำขอ']);tabs.push(['admin','Admin ทดสอบ']);}
  $('nav').innerHTML=tabs.map(([id,text])=>`<button type="button" data-tab="${id}" aria-selected="${ui.tab===id}">${text}</button>`).join('');
  $('nav').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ui.tab=b.dataset.tab;ui.message='';render()});
- $('view').innerHTML=ui.message+({stock:stockView,mine:requestsView,request:submitView,'admin-stock':adminStockView,admin:adminView}[ui.tab]||stockView)();
+ $('view').innerHTML=ui.message+({stock:stockView,mine:requestsView,request:submitView,'admin-stock':adminStockView,'admin-orders':adminOrdersView,admin:adminView}[ui.tab]||stockView)();
  attach();
 }
 function stockView(){
@@ -128,10 +128,104 @@ async function saveAdminProduct(ev){
     msg(`บันทึกสินค้า ${original.id} สำเร็จ`);
   }catch(err){showError(err)}finally{ui.busy=false;render()}
 }
+// Admin orders: show requests within the admin's RLS scope, with test-only delivery updates.
+// Production orders stay read-only in this Preview. Actual authorization is enforced by gift_set_given RPC.
+function testOnlyRequest(r, lines){
+  return r && !r.cancelled && r.team === 'TEST_ONLY' &&
+    r.customer_company === 'GOT - TEST ONLY' &&
+    lines.length === 1 && lines[0].product_id === 'TEST-ONLY-001' &&
+    lines[0].gift === 'TEST ONLY - สินค้าทดสอบ';
+}
+function adminOrdersView(){
+  if(ui.profile?.role!=='admin')return '<div class="card"><h2>ไม่มีสิทธิ์เข้าถึง</h2></div>';
+  const itemsBy={};ui.items.forEach(it=>(itemsBy[it.request_id]??=[]).push(it));
+  const total=ui.requests.length, open=ui.requests.filter(r=>!r.cancelled).length;
+  const q=ui.adminOrderSearch.toLocaleLowerCase('th').trim();
+  const filtered=ui.requests.filter(r=>{
+    const lines=itemsBy[r.id]||[];
+    if(ui.adminOrderFilter==='open' && r.cancelled)return false;
+    if(ui.adminOrderFilter==='cancelled' && !r.cancelled)return false;
+    if(ui.adminOrderFilter==='test' && r.team!=='TEST_ONLY')return false;
+    return !q || [String(r.id),r.name,r.team,r.customer_company,r.handler||'',...lines.map(it=>it.gift)]
+      .some(t=>String(t??'').toLocaleLowerCase('th').includes(q));
+  });
+  const cards=filtered.map(r=>{
+    const lines=itemsBy[r.id]||[];
+    const test=testOnlyRequest(r,lines);
+    const rows=lines.map(it=>`<div class="line"><span>${e(it.gift)} • เบิก ${Number(it.qty)} ชิ้น</span><span>ส่งมอบ ${Number(it.given)} ชิ้น</span></div>`).join('');
+    const only=lines[0];
+    const edit=test?`<div class="notice">เฉพาะคำขอทดสอบ TEST_ONLY: บันทึกจำนวนส่งมอบผ่าน <code>gift_set_given</code> (ไม่มีการหักสต็อกซ้ำ)</div>
+      <div class="field-row">
+        <div><label for="given-${Number(r.id)}">จำนวนที่ส่งมอบแล้ว (0–${Number(only.qty)})</label>
+          <input id="given-${Number(r.id)}" type="number" required min="0" max="${Number(only.qty)}" step="1" value="${Number(only.given)}"></div>
+        <div><label for="handler-${Number(r.id)}">ผู้ดำเนินการ (ตั้งค่าครั้งแรกเท่านั้น)</label>
+          <input id="handler-${Number(r.id)}" maxlength="120" value="${e(r.handler||'')}" ${r.handler?'readonly':''} placeholder="Admin Test"></div>
+      </div>
+      <button type="button" class="btn sm" data-save-given="${Number(r.id)}" ${ui.busy?'disabled':''}>บันทึกการส่งมอบ (ทดสอบ)</button>`
+      :'<p class="sub">'+(r.cancelled?'คำขอนี้ยกเลิกแล้ว — อ่านอย่างเดียว':'คำขอจริง — Preview แสดงอย่างเดียว ยังไม่เปิดให้แก้หรือส่งมอบ')+'</p>';
+    return `<article class="request-card"><div class="toolbar"><h3>คำขอ #${Number(r.id)} • ${e(r.customer_company)}</h3>
+      <span class="pill">${r.cancelled?'ยกเลิกแล้ว':'ยังไม่ยกเลิก'}</span></div>
+      <div class="sub">ผู้ขอ: ${e(r.name)} • ทีม: ${e(r.team)} • ต้องการวันที่ ${e(r.need)}</div>
+      <div class="sub">สร้างเมื่อ ${pretty(r.created_at)} • ผู้ดำเนินการ: ${e(r.handler||'ยังไม่ระบุ')}</div>
+      ${rows||'<div class="empty">ไม่มีรายการเบิก</div>'}${edit}</article>`;
+  }).join('');
+  return `<div class="card"><div class="toolbar"><h2>Admin: จัดการคำขอเบิก</h2><button class="btn ghost sm" data-refresh>รีเฟรช</button></div>
+    <div class="notice">⚠️ Preview เชื่อมฐานข้อมูล GOT จริง • คำขอจริงเป็นแบบอ่านอย่างเดียว • แก้จำนวนส่งมอบได้เฉพาะคำขอทีม TEST_ONLY ที่ยังไม่ถูกยกเลิก และมี TEST-ONLY-001 รายการเดียว</div>
+    <p class="sub">คำขอที่โหลดล่าสุด ${total} รายการ (สูงสุด 100) • ยังไม่ยกเลิก ${open} รายการ</p>
+    <form id="admin-orders-filter" class="field-row">
+      <div><label for="order-search">ค้นหาเลขคำขอ / ทีม / ผู้ขอ / บริษัท / สินค้า</label><input id="order-search" value="${e(ui.adminOrderSearch)}" placeholder="เช่น TEST_ONLY"></div>
+      <div><label for="order-status">แสดง</label><select id="order-status">
+        <option value="all" ${ui.adminOrderFilter==='all'?'selected':''}>คำขอทั้งหมด</option>
+        <option value="open" ${ui.adminOrderFilter==='open'?'selected':''}>ยังไม่ยกเลิก</option>
+        <option value="cancelled" ${ui.adminOrderFilter==='cancelled'?'selected':''}>ยกเลิกแล้ว</option>
+        <option value="test" ${ui.adminOrderFilter==='test'?'selected':''}>ทีม TEST_ONLY</option>
+      </select></div>
+      <div style="align-self:end"><button type="submit" class="btn sm">ค้นหา</button></div>
+    </form>
+    ${cards||'<div class="empty">ไม่พบคำขอตามเงื่อนไข</div>'}
+  </div>`;
+}
+async function saveTestDelivery(requestId){
+  if(ui.busy||ui.profile?.role!=='admin')return;
+  const r=ui.requests.find(x=>Number(x.id)===requestId);
+  const itemRows=ui.items.filter(it=>Number(it.request_id)===requestId);
+  if(!testOnlyRequest(r,itemRows))return showError(new Error('ทำรายการได้เฉพาะคำขอทดสอบที่ยังไม่ถูกยกเลิก'));
+  const item=itemRows[0], raw=$('given-'+requestId)?.value, handler=$('handler-'+requestId)?.value.trim()||'';
+  const newGiven=Number(raw);
+  if(raw==='' || !Number.isSafeInteger(newGiven) || newGiven<0 || newGiven>Number(item.qty))
+    return showError(new Error('จำนวนส่งมอบต้องเป็นจำนวนเต็มตั้งแต่ 0 ถึงจำนวนที่เบิก'));
+  if(handler.length>120)return showError(new Error('ชื่อผู้ดำเนินการยาวเกิน 120 ตัวอักษร'));
+  if(newGiven===Number(item.given) && (!handler||r.handler))return msg('ไม่มีจำนวนส่งมอบเปลี่ยนแปลง');
+  if(!confirm(`ยืนยันบันทึกคำขอทดสอบ #${requestId}?\nส่งมอบแล้ว ${item.given} → ${newGiven} ชิ้น\n(การอัปเดตการส่งมอบไม่หักสต็อกซ้ำ)`))return;
+  ui.busy=true;render();
+  try{
+    // Re-check the current server state; never submit on stale/cancelled/real requests.
+    const freshReq=requireOk(await db.from('requests')
+      .select('id,company_id,team,customer_company,cancelled')
+      .eq('id',requestId).eq('company_id',ui.profile.company_id).single(),'ตรวจคำขอ');
+    const freshItems=requireOk(await db.from('request_items')
+      .select('request_id,product_id,gift,qty,given')
+      .eq('request_id',requestId),'ตรวจรายการเบิก')||[];
+    if(!testOnlyRequest(freshReq,freshItems) || Number(freshItems[0].qty)!==Number(item.qty) ||
+       Number(freshItems[0].given)!==Number(item.given))
+      throw new Error('ข้อมูลคำขอเปลี่ยนไปแล้ว กรุณารีเฟรชก่อนทำรายการใหม่');
+    const done=requireOk(await db.rpc('gift_set_given',{
+      p_request_id:requestId,p_gift:freshItems[0].gift,p_given:newGiven,p_handler:handler||null
+    }),'gift_set_given');
+    if(done!==true)throw new Error('ระบบไม่ยืนยันการบันทึกจำนวนส่งมอบ');
+    await loadData();
+    const resultItem=ui.items.find(it=>Number(it.request_id)===requestId && it.gift===freshItems[0].gift);
+    if(!resultItem || Number(resultItem.given)!==newGiven)
+      throw new Error('RPC ทำงานแล้วแต่ยังยืนยันค่าที่อ่านกลับไม่ได้ กรุณารีเฟรชและตรวจสอบก่อนกดซ้ำ');
+    msg(`บันทึกคำขอทดสอบ #${requestId}: ส่งมอบแล้ว ${newGiven} ชิ้น`);
+  }catch(err){showError(err)}finally{ui.busy=false;render()}
+}
 function adminView(){
  const test=ui.requests.filter(r=>r.team==='TEST_ONLY');const html=test.map(r=>`<div class="request-card"><b>คำขอ #${Number(r.id)}</b> — ${e(r.customer_company)} • ${r.cancelled?'ยกเลิกแล้ว':'ยังไม่ยกเลิก'}<div class="request-actions" style="margin-top:10px"><button class="btn danger sm" data-cancel="${Number(r.id)}" ${r.cancelled||ui.busy?'disabled':''}>ยกเลิกคำขอทดสอบ #${Number(r.id)}</button></div></div>`).join('');
  return `<div class="card"><h2>Admin: ตรวจคำขอและคืนสต็อก</h2><div class="notice">Preview เปิดให้ยกเลิกเฉพาะคำขอทีม TEST_ONLY ที่มีแต่สินค้า TEST-ONLY-001 เท่านั้น (เช็กเพิ่มก่อนเรียก RPC)</div>${html||'<p class="empty">ยังไม่มีคำขอทดสอบ</p>'}<p class="sub">ฟีเจอร์จัดการสินค้าอยู่ที่เมนู “จัดการสินค้า” • ส่วนเพิ่มทีม/ผู้ใช้ Dashboard และส่งมอบ ยังไม่ได้ย้ายเข้าหน้านี้ กรุณาอย่า Merge ไป main</p></div>`}
 function attach(){document.querySelectorAll('[data-refresh]').forEach(b=>b.onclick=()=>loadData().catch(showError));
+ const searchForm=$('admin-orders-filter');if(searchForm)searchForm.onsubmit=ev=>{ev.preventDefault();ui.adminOrderSearch=$('order-search').value;ui.adminOrderFilter=$('order-status').value;render()};
+ document.querySelectorAll('[data-save-given]').forEach(b=>b.onclick=()=>saveTestDelivery(Number(b.dataset.saveGiven)));
  const add=$('admin-add-product');if(add)add.onsubmit=createAdminProduct;
  const edit=$('admin-edit-product');if(edit)edit.onsubmit=saveAdminProduct;
  const picker=$('product-editor-select');if(picker)picker.onchange=()=>{ui.editProductId=picker.value;render()};
@@ -140,7 +234,7 @@ function attach(){document.querySelectorAll('[data-refresh]').forEach(b=>b.oncli
  document.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=async()=>{const id=Number(b.dataset.cancel);try{const r=ui.requests.find(x=>Number(x.id)===id);if(!r||r.cancelled||r.team!=='TEST_ONLY')throw new Error('คำขอไม่ใช่รายการทดสอบ');let its=ui.items.filter(x=>Number(x.request_id)===id);if(!its.length||its.some(x=>x.product_id!=='TEST-ONLY-001'))throw new Error('คำขอนี้มีรายการที่ไม่ใช่สินค้าทดสอบ');if(!confirm('ยืนยันยกเลิกคำขอทดสอบ #'+id+' และคืนสต็อก?'))return;ui.busy=true;render();requireOk(await db.rpc('gift_cancel',{p_request_id:id}),'gift_cancel');await loadData();msg('ยกเลิกคำขอ #'+id+' และคืนสต็อกสำเร็จ')}catch(err){showError(err)}finally{ui.busy=false;render()}})
 }
 async function loadData(){if(!ui.user)return;const profile=requireOk(await db.from('profiles').select('company_id,display_name,role').eq('id',ui.user.id).single(),'profile');if(!profile)throw new Error('ไม่พบโปรไฟล์');ui.profile=profile;
- if(profile.role!=='admin' && (ui.tab==='admin'||ui.tab==='admin-stock'))ui.tab='stock';
+ if(profile.role!=='admin' && (ui.tab==='admin'||ui.tab==='admin-stock'||ui.tab==='admin-orders'))ui.tab='stock';
  const company=profile.company_id;
  ui.adminProducts=[];
  if(profile.role==='admin'){
