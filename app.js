@@ -1,10 +1,11 @@
 "use strict";
-// Preview-only UI. Supabase RLS remains the authorization boundary.
+// No-login public form + Supabase Auth for admin only.
+// The public Edge Function + RPC, NOT the browser, is the stock mutation boundary.
 // Original full admin dashboard features require separate migration.
 const C = window.APP_CONFIG || {};
 const $ = id => document.getElementById(id);
 const e = s => String(s ?? "").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const ui = { user:null, profile:null, stock:[], adminProducts:[], editProductId:'TEST-ONLY-001', requests:[], items:[], notes:[], tab:'stock', adminOrderFilter:'all', adminOrderSearch:'', busy:false, message:'' };
+const ui = { user:null, profile:null, stock:[], adminProducts:[], editProductId:'TEST-ONLY-001', requests:[], items:[], notes:[], tab:'stock', adminOrderFilter:'all', adminOrderSearch:'', busy:false, message:'', viewMode:'public', showAdminLogin:false, publicData:null, publicError:'', publicBusy:false, publicTeam:'', publicMember:'', publicProduct:'TEST-ONLY-001', publicQty:1, publicNonce:null, publicCaptcha:'', turnstileWidgetId:null, publicResult:null };
 const sbReady = typeof window.supabase?.createClient === 'function' &&
   /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(C.supabaseUrl || '') &&
   /^sb_publishable_/.test(C.supabasePublishableKey || '') &&
@@ -16,15 +17,36 @@ function today(){let dt=new Date();dt.setHours(dt.getHours()-dt.getTimezoneOffse
 function pretty(iso){return iso?new Date(iso).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'-'}
 function showError(err){console.error('[Gift Preview]',err);msg(err?.message||String(err),false)}
 function header(){
- $('top').innerHTML=`<div><h1>🎁 เบิกของขวัญ GOT</h1><div class="sub">Supabase Preview • 8-bit</div></div><div class="top-actions">${ui.user?`<span class="pill">${e(ui.profile?.display_name)} • ${e(ui.profile?.role)}</span><button class="btn ghost sm" id="logout">ออกจากระบบ</button>`:''}</div>`;
- const log=$('logout');if(log)log.onclick=async()=>{await db.auth.signOut();ui.user=null;ui.profile=null;ui.stock=[];ui.adminProducts=[];ui.requests=[];ui.items=[];ui.notes=[];ui.tab='stock';ui.message='';render()};
+ const admin=ui.user&&ui.profile?.role==='admin';
+ const publicMode=ui.viewMode==='public';
+ $('top').innerHTML=`<div><h1>🎁 เบิกของขวัญ GOT</h1><div class="sub">${e(C.companyName||'Get On Technology')} • Supabase Preview</div></div><div class="top-actions">${admin?`<span class="pill">${e(ui.profile.display_name)} • admin</span>`:''}<button class="btn ghost sm" id="switch-mode">${publicMode?'🔐 เข้าระบบ Admin':'🎁 กลับหน้าเบิก'}</button>${admin&&!publicMode?'<button class="btn ghost sm" id="logout">ออกจากระบบ</button>':''}</div>`;
+ $('switch-mode').onclick=()=>{
+   ui.message='';
+   if(ui.viewMode==='public'){
+     ui.showAdminLogin=!admin;ui.viewMode='admin';ui.tab='admin-stock';
+   } else {ui.viewMode='public';ui.showAdminLogin=false;}
+   render();
+ };
+ const log=$('logout');if(log)log.onclick=async()=>{await db.auth.signOut();ui.user=null;ui.profile=null;ui.stock=[];ui.adminProducts=[];ui.requests=[];ui.items=[];ui.notes=[];ui.tab='stock';ui.message='';ui.viewMode='public';ui.showAdminLogin=false;render()};
 }
 function render(){header();
  if(!sbReady){$('nav').innerHTML='';$('view').innerHTML='<div class="card"><h2>ยังไม่ได้ตั้งค่า Supabase</h2><p>เปิดไฟล์ <code>config.js</code> และใส่ Project URL กับ Publishable Key ของโปรเจกต์จริง</p><p class="sub">ใช้เฉพาะ Publishable Key ห้ามใช้ Secret Key</p></div>';return}
- if(!ui.user || !ui.profile){ $('nav').innerHTML='';$('view').innerHTML=`<div class="card form-card"><h2>เข้าสู่ระบบ</h2><form id="login-form"><div class="fld"><label for="email">อีเมล Supabase Auth</label><input id="email" type="email" required autocomplete="username"></div><div class="fld"><label for="password">รหัสผ่าน</label><input id="password" type="password" required autocomplete="current-password"></div><button class="btn" type="submit" ${ui.busy?'disabled':''}>${ui.busy?'กำลังตรวจสอบ...':'เข้าสู่ระบบ'}</button></form>${ui.message}</div>`;
- $('login-form').onsubmit=async ev=>{ev.preventDefault();let em=$('email').value,pass=$('password').value;ui.busy=true;render();try{const d=requireOk(await db.auth.signInWithPassword({email:em,password:pass}),'Login');ui.user=d.user;ui.message='';await loadData()}catch(err){showError(err)}finally{ui.busy=false;render()}};return}
- let isAdmin=ui.profile?.role==='admin';
- const tabs=[['stock','รายการสินค้า'],['mine',isAdmin?'คำขอทั้งหมด':'คำขอของฉัน'],['request','เบิกของทดสอบ']];if(isAdmin){tabs.push(['admin-stock','จัดการสินค้า']);tabs.push(['admin-orders','จัดการคำขอ']);tabs.push(['admin','Admin ทดสอบ']);}
+ if(ui.viewMode==='public'){
+   $('nav').innerHTML='';$('view').innerHTML=publicView();attachPublic();return;
+ }
+ if(!ui.user || ui.profile?.role!=='admin'){
+   $('nav').innerHTML='';$('view').innerHTML=`<div class="card form-card"><h2>🔐 เข้าสู่ระบบ Admin</h2><p class="sub">พนักงานทั่วไปไม่ต้อง Login — กด “กลับหน้าเบิก” ด้านบน</p><form id="login-form"><div class="fld"><label for="email">อีเมล Admin (Supabase Auth)</label><input id="email" type="email" required autocomplete="username"></div><div class="fld"><label for="password">รหัสผ่าน Admin</label><input id="password" type="password" required autocomplete="current-password"></div><button class="btn" type="submit" ${ui.busy?'disabled':''}>${ui.busy?'กำลังตรวจสอบ...':'เข้าสู่หลังบ้าน'}</button></form>${ui.message}</div>`;
+   $('login-form').onsubmit=async ev=>{
+     ev.preventDefault();const em=$('email').value,pass=$('password').value;ui.busy=true;
+     try{const d=requireOk(await db.auth.signInWithPassword({email:em,password:pass}),'Login');
+       const profile=requireOk(await db.from('profiles').select('company_id,display_name,role').eq('id',d.user.id).single(),'ตรวจสิทธิ์');
+       if(profile.role!=='admin'){await db.auth.signOut();throw new Error('บัญชีนี้ไม่มีสิทธิ์ Admin');}
+       ui.user=d.user;ui.profile=profile;ui.tab='admin-stock';ui.message='';ui.showAdminLogin=false;await loadData();
+     }catch(err){showError(err)}finally{ui.busy=false;render()}
+   };return;
+ }
+ let isAdmin=true;
+ const tabs=[['stock','รายการสินค้า'],['mine','คำขอทั้งหมด']];tabs.push(['admin-stock','จัดการสินค้า']);tabs.push(['admin-orders','จัดการคำขอ']);tabs.push(['admin','Admin ทดสอบ']);
  $('nav').innerHTML=tabs.map(([id,text])=>`<button type="button" data-tab="${id}" aria-selected="${ui.tab===id}">${text}</button>`).join('');
  $('nav').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ui.tab=b.dataset.tab;ui.message='';render()});
  $('view').innerHTML=ui.message+({stock:stockView,mine:requestsView,request:submitView,'admin-stock':adminStockView,'admin-orders':adminOrdersView,admin:adminView}[ui.tab]||stockView)();
@@ -248,5 +270,117 @@ async function loadData(){if(!ui.user)return;const profile=requireOk(await db.fr
  ui.items=ids.length?requireOk(await db.from('request_items').select('request_id,company_id,product_id,gift,qty,given').in('request_id',ids),'request_items')||[]:[];
  ui.message='';render();
 }
-async function boot(){if(!sbReady){render();return}try{const res=await db.auth.getUser();if(res.error)throw res.error;if(res.data.user){ui.user=res.data.user;await loadData()}}catch(err){console.warn('Auto session:',err.message)}render()}
+
+// PUBLIC: no-login catalog is served by a limited Supabase Edge Function. No service key in browser.
+function edgeUrl(){return String(C.supabaseUrl||'').replace(/\/$/,'')+'/functions/v1/gift-public'}
+function publicView(){
+  const catalog=ui.publicData;
+  let content='';
+  if(!catalog){content=`<div class="card"><h2>🎁 เบิกของขวัญโดยไม่ต้อง Login</h2>${ui.publicResult?`<div class="notice good">ส่งคำขอสำเร็จ #${Number(ui.publicResult)} กรุณาจดหมายเลขนี้ไว้</div>`:''}${ui.publicError?`<div class="notice bad">${e(ui.publicError)}</div>`:'<div class="empty">กำลังโหลดสินค้าและทีมจาก Supabase...</div>'}<button class="btn ghost sm" id="public-retry">ลองโหลดอีกครั้ง</button></div>`;return content}
+  const teams=catalog.teams||[];
+  const team=teams.find(t=>t.name===ui.publicTeam);
+  const members=team?.members||[];
+  const products=catalog.products||[];
+  const prod=products.find(p=>p.id===ui.publicProduct)||products[0];
+  const selectedQty=Math.max(1,Math.min(Number(prod?.qty||1),20,Number(ui.publicQty)||1));
+  const teamOptions=teams.map(t=>`<option value="${e(t.name)}" ${ui.publicTeam===t.name?'selected':''}>${e(t.name)}</option>`).join('');
+  const memberOptions=members.map(n=>`<option value="${e(n)}" ${ui.publicMember===n?'selected':''}>${e(n)}</option>`).join('');
+  const productOptions=products.map(p=>`<option value="${e(p.id)}" ${prod?.id===p.id?'selected':''}>${e(p.name)} (เหลือ ${Number(p.qty)} ชิ้น)</option>`).join('');
+  const maxQty=Math.max(1,Math.min(20,Number(prod?.qty)||1));
+  const result=ui.publicResult?`<div class="notice good" role="status"><strong>ส่งคำขอสำเร็จ #${Number(ui.publicResult)}</strong> — ระบบตัดสต็อกทันที กรุณาจดหมายเลขนี้ไว้</div>`:'';
+  content=`<div class="card"><h2>🎁 เบิกของขวัญ GOT</h2><p class="sub">พนักงานสามารถกรอกแบบฟอร์มและเบิกได้ทันที โดยไม่ต้องสมัครสมาชิกหรือ Login</p>
+    ${catalog.testMode?'<div class="notice">🧪 PREVIEW: รับคำขอเฉพาะ TEST_ONLY / TEST-ONLY-001 เท่านั้น ยังไม่เปิดเบิกสินค้าจริง</div>':'<div class="notice">เมื่อยืนยันเบิกแล้ว ระบบจะตัดยอดสต็อกทันที และส่งคำขอให้ Admin จัดการส่งมอบ</div>'}
+    ${ui.message}${result}
+    <form id="public-form">
+      <div class="field-row">
+        <div><label for="pub-team">ทีมผู้เบิก *</label><select id="pub-team" required><option value="">เลือกทีม</option>${teamOptions}</select></div>
+        <div><label for="pub-member">ชื่อผู้เบิก *</label><select id="pub-member" required ${!team?'disabled':''}><option value="">เลือกชื่อ</option>${memberOptions}</select></div>
+      </div>
+      <div class="field-row">
+        <div><label for="pub-company">บริษัทลูกค้าที่รับของ *</label><input id="pub-company" required maxlength="120" placeholder="เช่น GOT - TEST ONLY" value="${e(ui.publicCustomer||'')}"></div>
+        <div><label for="pub-need">วันที่ต้องการรับ *</label><input id="pub-need" type="date" required min="${today()}" value="${e(ui.publicNeed||today())}"></div>
+      </div>
+      <div class="field-row">
+        <div><label for="pub-product">เลือกของขวัญ *</label><select id="pub-product" required>${productOptions}</select></div>
+        <div><label for="pub-qty">จำนวน *</label><input id="pub-qty" type="number" min="1" max="${maxQty}" step="1" value="${selectedQty}" required ${!prod||Number(prod.qty)<1?'disabled':''}></div>
+      </div>
+      <p class="sub">${prod?`สินค้าคงเหลือ: <strong>${Number(prod.qty)}</strong> ชิ้น`:'ไม่มีสินค้าที่เบิกได้'}</p>
+      <div class="fld"><label>ยืนยันว่าไม่ใช่ระบบอัตโนมัติ *</label><div id="gift-turnstile"></div></div>
+      <button class="btn" type="submit" ${ui.publicBusy||!team||!ui.publicMember||!prod||Number(prod.qty)<1?'disabled':''}>${ui.publicBusy?'กำลังบันทึก...':'ยืนยันเบิกของขวัญ (ตัดสต็อกทันที)'}</button>
+    </form>
+    <p class="sub" style="margin-top:14px">ไม่ต้อง Login • โปรดตรวจชื่อผู้เบิกและจำนวนก่อนยืนยัน • หากเคยส่งแล้วแต่หน้าจอค้าง ให้ตรวจผลก่อนกดอีกครั้ง</p>
+  </div>`;
+  return content;
+}
+function mountTurnstile(){
+  const node=$('gift-turnstile');if(!node)return;
+  if(ui.turnstileWidgetId!==null && window.turnstile){try{window.turnstile.remove(ui.turnstileWidgetId)}catch{}}
+  ui.turnstileWidgetId=null;ui.publicCaptcha='';
+  if(!C.turnstileSiteKey || C.turnstileSiteKey.includes('REPLACE')){
+    node.textContent='ยังไม่ได้ใส่ Turnstile Site Key ใน config.js';return;
+  }
+  if(!window.turnstile){node.textContent='CAPTCHA กำลังโหลด...';return;}
+  ui.turnstileWidgetId=window.turnstile.render(node,{
+    sitekey:C.turnstileSiteKey, action:'gift_submit',
+    callback(token){ui.publicCaptcha=token},
+    'expired-callback':()=>{ui.publicCaptcha=''},
+    'error-callback':()=>{ui.publicCaptcha=''},
+  });
+}
+function attachPublic(){
+  const retry=$('public-retry');if(retry)retry.onclick=loadPublicCatalog;
+  const form=$('public-form');if(!form)return;
+  const remember=()=>{ui.publicCustomer=$('pub-company')?.value||'';ui.publicNeed=$('pub-need')?.value||today()};
+  $('pub-team').onchange=()=>{remember();ui.publicTeam=$('pub-team').value;ui.publicMember='';ui.publicResult=null;render()};
+  $('pub-member').onchange=()=>{remember();ui.publicMember=$('pub-member').value;render()};
+  $('pub-product').onchange=()=>{remember();ui.publicProduct=$('pub-product').value;ui.publicQty=1;render()};
+  $('pub-qty').onchange=()=>{ui.publicQty=Number($('pub-qty').value)||1};
+  mountTurnstile();
+  form.onsubmit=async ev=>{
+    ev.preventDefault();if(ui.publicBusy)return;
+    const team=$('pub-team').value,member=$('pub-member').value,customer=$('pub-company').value.trim(),need=$('pub-need').value;
+    const id=$('pub-product').value,qty=Number($('pub-qty').value);
+    const token=ui.publicCaptcha;
+    ui.publicCustomer=customer;ui.publicNeed=need;ui.publicTeam=team;ui.publicMember=member;ui.publicProduct=id;ui.publicQty=qty;
+    if(!token)return alert('กรุณายืนยัน CAPTCHA ก่อนส่งคำขอ');
+    if(!team||!member||!customer||!need||!id||!Number.isInteger(qty)||qty<1||qty>20)return alert('กรุณากรอกข้อมูลให้ถูกต้อง');
+    if(!confirm(`ยืนยันเบิก ${id} จำนวน ${qty} ชิ้น?\nระบบจะตัดสต็อกทันที`))return;
+    ui.publicNonce ||= crypto.randomUUID();
+    ui.publicBusy=true;ui.message='';render();
+    try{
+      const response=await fetch(edgeUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        action:'submit',team,member,customerCompany:customer,need,items:[{id,qty}],nonce:ui.publicNonce,captchaToken:token,
+      })});
+      const data=await response.json();
+      if(!response.ok || data.ok!==true)throw new Error(data.error||'ไม่สามารถบันทึกคำขอได้');
+      ui.publicResult=data.id;ui.publicNonce=null;ui.message='';await loadPublicCatalog(false);
+    }catch(err){ui.message=`<div class="notice bad" role="alert">${e(err?.message||String(err))} หากเกิดปัญหาเครือข่าย โปรดตรวจผลก่อนกดซ้ำ</div>`}
+    finally{ui.publicBusy=false;render()}
+  };
+}
+async function loadPublicCatalog(shouldRender=true){
+  try{
+    const r=await fetch(edgeUrl(),{method:'GET',cache:'no-store'});
+    const data=await r.json();if(!r.ok||data.ok!==true)throw new Error(data.error||'โหลดข้อมูลไม่ได้');
+    ui.publicData=data;ui.publicError='';
+    if(!data.teams?.some(t=>t.name===ui.publicTeam)){ui.publicTeam='';ui.publicMember=''}
+    if(!data.products?.some(p=>p.id===ui.publicProduct))ui.publicProduct=data.products?.[0]?.id||'';
+  }catch(err){ui.publicError=err?.message||String(err);ui.publicData=null}
+  if(shouldRender)render();
+}
+
+async function boot(){
+  if(!sbReady){render();return}
+  try{
+    const res=await db.auth.getUser();
+    if(res.data?.user){
+      const p=await db.from('profiles').select('company_id,display_name,role').eq('id',res.data.user.id).maybeSingle();
+      if(!p.error && p.data?.role==='admin'){
+        ui.user=res.data.user;ui.profile=p.data;
+        // Never automatically force visitors to see an admin page.
+      } else { await db.auth.signOut(); }
+    }
+  }catch(err){console.warn('Auth restore:',err?.message)}
+  render();await loadPublicCatalog();
+}
 boot();

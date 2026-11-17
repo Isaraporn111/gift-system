@@ -5,5 +5,6 @@ window.APP_CONFIG = {
   companyCode: "got",
   companyName: "Get On Technology",
   supabaseUrl: "https://qmqvhhvxdlsxxbmqxmwy.supabase.co",
-  supabasePublishableKey: "sb_publishable_kfXHgt1EEfi-lLn0apxlNA_OHH4LbGO"
+  supabasePublishableKey: "sb_publishable_kfXHgt1EEfi-lLn0apxlNA_OHH4LbGO",
+  turnstileSiteKey: "0x4AAAAAAGFZTlUASES0iRpY"
 };
