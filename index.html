@@ -174,7 +174,7 @@ th,td{border-bottom:2px dashed var(--line)}
 body.wait,body.wait *{cursor:progress}
 body.wait .btn{opacity:.65;pointer-events:none}
 
-    .wrap{max-width:1000px}
+    .wrap{max-width:1040px}
     .preview-note{background:var(--p3);border:3px solid var(--pk);padding:12px 15px;margin-bottom:18px;font-weight:600}
     .form-card{max-width:520px;margin-inline:auto}
     .btn:disabled{opacity:.55;cursor:not-allowed}
@@ -195,16 +195,18 @@ body.wait .btn{opacity:.65;pointer-events:none}
     .pill{display:inline-block;border:2px solid var(--pk);padding:2px 7px;background:var(--p1);font-size:12px}
     code{overflow-wrap:anywhere}
     .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  </style>
+  
+    .gal .gcard{min-height:116px}.gcard img{margin:auto}.irow{grid-template-columns:48px minmax(120px,1fr) 85px auto}.rq .field-row{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}.toolbar .chip{white-space:nowrap}.side{max-height:75vh;overflow:auto}.btn:disabled{transform:none;box-shadow:none}.admin-stock-thumb{display:flex;align-items:center;gap:8px}.public-items{margin-top:12px}.public-items .irow input{min-width:0}.dash2 .row{grid-template-columns:minmax(78px,120px) 1fr 44px}.dash2 .row span{overflow-wrap:anywhere}.hero .sub{max-width:520px}.request-card .tag{white-space:nowrap}.preview-note{font-size:13px}.rq .line{align-items:baseline}.people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px}.people-grid .card{margin:0}.person-row{padding:6px 0;border-bottom:2px dashed var(--line)}@media(max-width:560px){.irow{grid-template-columns:40px minmax(0,1fr) 66px}.irow .btn{grid-column:2/-1;justify-self:start}.field-row{grid-template-columns:1fr}.side{position:static;max-height:45vh}.row span{overflow-wrap:anywhere}.hero-t{font-size:22px}.wrap{padding-inline:12px}}
+    </style>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="config.js"></script>
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
-   <script defer src="app.js"></script>
+   <script defer src="app.js?v=ui-20261118-1"></script>
 </head>
 <body>
  <div class="wrap">
    <header class="top" id="top"><h1>🎁 Gift System GOT</h1></header>
-   <div class="preview-note">🧪 PREVIEW: พนักงานไม่ต้อง Login • Admin Login แยก • รับเบิกเฉพาะ TEST_ONLY จนกว่าจะทดสอบครบ</div>
+   <div class="preview-note">🧪 PREVIEW UI v1: พนักงานไม่ต้อง Login • Admin Login แยก • รับเบิกเฉพาะ TEST_ONLY จนกว่าจะทดสอบครบ</div>
    <nav id="nav" aria-label="ส่วนต่าง ๆ ของระบบ"></nav>
    <main id="view"><div class="card"><div class="empty">กำลังเปิดระบบ...</div></div></main>
  </div>
