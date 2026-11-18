@@ -154,7 +154,7 @@ async function saveAdminProduct(ev){
 // Production orders stay read-only in this Preview. Actual authorization is enforced by gift_set_given RPC.
 function testOnlyRequest(r, lines){
   return r && !r.cancelled && r.team === 'TEST_ONLY' &&
-    r.customer_company === 'GOT - TEST ONLY' &&
+    r.name === 'Member Test' &&
     lines.length === 1 && lines[0].product_id === 'TEST-ONLY-001' &&
     lines[0].gift === 'TEST ONLY - สินค้าทดสอบ';
 }
@@ -184,7 +184,7 @@ function adminOrdersView(){
           <input id="handler-${Number(r.id)}" maxlength="120" value="${e(r.handler||'')}" ${r.handler?'readonly':''} placeholder="Admin Test"></div>
       </div>
       <button type="button" class="btn sm" data-save-given="${Number(r.id)}" ${ui.busy?'disabled':''}>บันทึกการส่งมอบ (ทดสอบ)</button>`
-      :'<p class="sub">'+(r.cancelled?'คำขอนี้ยกเลิกแล้ว — อ่านอย่างเดียว':'คำขอจริง — Preview แสดงอย่างเดียว ยังไม่เปิดให้แก้หรือส่งมอบ')+'</p>';
+      :'<p class="sub">'+(r.cancelled?'คำขอนี้ยกเลิกแล้ว — อ่านอย่างเดียว':'ไม่เข้าเงื่อนไขคำขอทดสอบ — Preview อ่านอย่างเดียว')+'</p>';
     return `<article class="request-card"><div class="toolbar"><h3>คำขอ #${Number(r.id)} • ${e(r.customer_company)}</h3>
       <span class="pill">${r.cancelled?'ยกเลิกแล้ว':'ยังไม่ยกเลิก'}</span></div>
       <div class="sub">ผู้ขอ: ${e(r.name)} • ทีม: ${e(r.team)} • ต้องการวันที่ ${e(r.need)}</div>
@@ -192,7 +192,7 @@ function adminOrdersView(){
       ${rows||'<div class="empty">ไม่มีรายการเบิก</div>'}${edit}</article>`;
   }).join('');
   return `<div class="card"><div class="toolbar"><h2>Admin: จัดการคำขอเบิก</h2><button class="btn ghost sm" data-refresh>รีเฟรช</button></div>
-    <div class="notice">⚠️ Preview เชื่อมฐานข้อมูล GOT จริง • คำขอจริงเป็นแบบอ่านอย่างเดียว • แก้จำนวนส่งมอบได้เฉพาะคำขอทีม TEST_ONLY ที่ยังไม่ถูกยกเลิก และมี TEST-ONLY-001 รายการเดียว</div>
+    <div class="notice">⚠️ Preview เชื่อมฐานข้อมูล GOT จริง • คำขอจริงเป็นแบบอ่านอย่างเดียว • แก้จำนวนส่งมอบได้เฉพาะคำขอทีม TEST_ONLY ของ Member Test ที่ยังไม่ถูกยกเลิก และมี TEST-ONLY-001 รายการเดียว</div>
     <p class="sub">คำขอที่โหลดล่าสุด ${total} รายการ (สูงสุด 100) • ยังไม่ยกเลิก ${open} รายการ</p>
     <form id="admin-orders-filter" class="field-row">
       <div><label for="order-search">ค้นหาเลขคำขอ / ทีม / ผู้ขอ / บริษัท / สินค้า</label><input id="order-search" value="${e(ui.adminOrderSearch)}" placeholder="เช่น TEST_ONLY"></div>
@@ -223,7 +223,7 @@ async function saveTestDelivery(requestId){
   try{
     // Re-check the current server state; never submit on stale/cancelled/real requests.
     const freshReq=requireOk(await db.from('requests')
-      .select('id,company_id,team,customer_company,cancelled')
+      .select('id,company_id,team,name,customer_company,cancelled')
       .eq('id',requestId).eq('company_id',ui.profile.company_id).single(),'ตรวจคำขอ');
     const freshItems=requireOk(await db.from('request_items')
       .select('request_id,product_id,gift,qty,given')
